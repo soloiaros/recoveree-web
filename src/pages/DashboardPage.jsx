@@ -1,33 +1,65 @@
+import { useState } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTeamData } from '../hooks/useTeamData.js';
-import AddAthleteForm from '../components/AddAthleteForm.jsx';
-import AthleteTable from '../components/AthleteTable.jsx';
+import { useTeamName } from '../hooks/useTeamName.js';
 import DashboardHeader from '../components/DashboardHeader.jsx';
+import PillNavBar from '../components/PillNavBar.jsx';
+import OverviewTab from '../components/overview/OverviewTab.jsx';
+import MembersTab from '../components/members/MembersTab.jsx';
+import ManageTab from '../components/manage/ManageTab.jsx';
+
+const TABS = [
+  { id: 'overview', label: 'Overview' },
+  { id: 'members', label: 'Members' },
+  { id: 'manage', label: 'Manage' },
+];
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const { athletes, loading, error, refresh } = useTeamData(user?.id);
+  const coachId = user?.id;
+
+  const { athletes, allLogs, loading, error, refresh } = useTeamData(coachId);
+  const { teamName, setTeamName } = useTeamName(coachId);
+
+  const [activeTab, setActiveTab] = useState('overview');
 
   return (
-    <main>
-      <DashboardHeader />
+    <div className="app-shell">
+      <DashboardHeader teamName={teamName} />
 
-      <AddAthleteForm coachId={user?.id} onAdded={refresh} />
+      <PillNavBar tabs={TABS} activeId={activeTab} onChange={setActiveTab} />
 
-      <section className="card">
-        <div className="row" style={{ justifyContent: 'space-between' }}>
-          <h2 style={{ margin: 0 }}>Your team</h2>
-          <button type="button" onClick={refresh} disabled={loading}>
-            {loading ? 'Refreshing...' : 'Refresh'}
-          </button>
-        </div>
+      <main className="app-main">
+        {error && (
+          <div className="card section" role="alert">
+            <p className="error" style={{ margin: 0 }}>{error}</p>
+          </div>
+        )}
 
-        {error && <p className="error">{error}</p>}
+        {activeTab === 'overview' && (
+          <OverviewTab
+            teamName={teamName}
+            athletes={athletes}
+            allLogs={allLogs}
+            loading={loading}
+            onRefresh={refresh}
+          />
+        )}
 
-        <div style={{ marginTop: 12 }}>
-          <AthleteTable athletes={athletes} />
-        </div>
-      </section>
-    </main>
+        {activeTab === 'members' && (
+          <MembersTab athletes={athletes} allLogs={allLogs} />
+        )}
+
+        {activeTab === 'manage' && (
+          <ManageTab
+            coachId={coachId}
+            athletes={athletes}
+            teamName={teamName}
+            onTeamNameChange={setTeamName}
+            onRosterChange={refresh}
+          />
+        )}
+      </main>
+    </div>
   );
 }

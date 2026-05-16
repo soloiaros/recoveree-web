@@ -2,17 +2,22 @@ import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient.js';
 
 /**
- * Loads the coach's roster, the linked athlete profiles, and their recovery logs.
- * Returns a flat array of athletes, each augmented with their latest recovery log.
+ * Loads a coach's roster, the linked athlete profiles, and their recovery logs.
+ *
+ * Returns:
+ *   - athletes: Array<{ athleteId, email, role, latestLog }>
+ *   - allLogs:  Array<recovery_log> across the entire team, newest first
+ *   - loading, error, refresh()
  *
  * Data flow:
- *   team_roster (filter by coach_id)
- *     -> athlete_id list
- *        -> profiles (athlete_id, email, role)
- *        -> recovery_logs (athlete_id, ordered by created_at desc)
+ *   team_roster (coach_id = X)
+ *     -> athleteIds
+ *        -> profiles (id IN ...)
+ *        -> recovery_logs (athlete_id IN ..., ordered desc)
  */
 export function useTeamData(coachId) {
   const [athletes, setAthletes] = useState([]);
+  const [allLogs, setAllLogs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -30,6 +35,7 @@ export function useTeamData(coachId) {
       const athleteIds = (rosterRows ?? []).map((r) => r.athlete_id);
       if (athleteIds.length === 0) {
         setAthletes([]);
+        setAllLogs([]);
         return;
       }
 
@@ -45,9 +51,9 @@ export function useTeamData(coachId) {
       if (profilesRes.error) throw profilesRes.error;
       if (logsRes.error) throw logsRes.error;
 
+      const logs = logsRes.data ?? [];
       const latestLogByAthlete = new Map();
-      for (const log of logsRes.data ?? []) {
-        // Logs are pre-sorted desc, so the first one we see per athlete is the newest.
+      for (const log of logs) {
         if (!latestLogByAthlete.has(log.athlete_id)) {
           latestLogByAthlete.set(log.athlete_id, log);
         }
@@ -66,6 +72,7 @@ export function useTeamData(coachId) {
       });
 
       setAthletes(merged);
+      setAllLogs(logs);
     } catch (err) {
       setError(err.message ?? 'Failed to load team data.');
     } finally {
@@ -77,5 +84,5 @@ export function useTeamData(coachId) {
     refresh();
   }, [refresh]);
 
-  return { athletes, loading, error, refresh };
+  return { athletes, allLogs, loading, error, refresh };
 }

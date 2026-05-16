@@ -1,14 +1,21 @@
 import { useAuth } from '../context/AuthContext.jsx';
 
-export default function DashboardHeader() {
+export default function DashboardHeader({ teamName }) {
   const { user, signOut } = useAuth();
   return (
-    <header className="row" style={{ justifyContent: 'space-between', marginBottom: 16 }}>
-      <div>
-        <h1>Coach Dashboard</h1>
-        <span className="muted">Signed in as {user?.email}</span>
+    <header className="app-header">
+      <div className="app-header__inner">
+        <div className="app-brand">
+          <span className="brand-mark">R</span>
+          <span>{teamName ?? 'Recoveree'}</span>
+        </div>
+        <div className="app-header__user">
+          <span>{user?.email}</span>
+          <button type="button" className="ghost" onClick={() => signOut()}>
+            Log out
+          </button>
+        </div>
       </div>
-      <button type="button" onClick={() => signOut()}>Log out</button>
     </header>
   );
 }

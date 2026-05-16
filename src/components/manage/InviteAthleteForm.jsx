@@ -1,14 +1,18 @@
 import { useState } from 'react';
-import { supabase } from '../lib/supabaseClient.js';
+import { supabase } from '../../lib/supabaseClient.js';
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
- * Lets the coach add an athlete to their roster either by athlete UUID
- * or by athlete email (which is looked up against `profiles` first).
+ * Adds an athlete to the coach's roster.
+ *
+ * Note: there is no Supabase email-based invite flow for the hackathon, so the
+ * athlete must already exist in `profiles` (e.g. they signed up via the iOS
+ * app). The coach can paste the athlete's email or UUID and we resolve to the
+ * profile row before inserting into `team_roster`.
  */
-export default function AddAthleteForm({ coachId, onAdded }) {
+export default function InviteAthleteForm({ coachId, onAdded }) {
   const [value, setValue] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
@@ -18,9 +22,7 @@ export default function AddAthleteForm({ coachId, onAdded }) {
     const input = rawInput.trim();
     if (!input) throw new Error('Enter an athlete email or UUID.');
 
-    if (UUID_REGEX.test(input)) {
-      return input;
-    }
+    if (UUID_REGEX.test(input)) return input;
 
     const { data, error: lookupError } = await supabase
       .from('profiles')
@@ -51,9 +53,7 @@ export default function AddAthleteForm({ coachId, onAdded }) {
         .eq('athlete_id', athleteId)
         .maybeSingle();
       if (existingError) throw existingError;
-      if (existing) {
-        throw new Error('That athlete is already on your roster.');
-      }
+      if (existing) throw new Error('That athlete is already on your roster.');
 
       const { error: insertError } = await supabase
         .from('team_roster')
@@ -72,27 +72,30 @@ export default function AddAthleteForm({ coachId, onAdded }) {
 
   return (
     <form className="card" onSubmit={handleSubmit}>
-      <h3>Add Athlete</h3>
-      <p className="muted">Enter an athlete's email address or their profile UUID.</p>
+      <h3>Invite athlete</h3>
+      <p className="muted" style={{ marginTop: 4, marginBottom: 12 }}>
+        Athletes need a Recoveree account first (created in the iOS app). Paste
+        their email or profile UUID to add them to your team.
+      </p>
 
-      <div style={{ marginBottom: 12 }}>
-        <label htmlFor="athlete-input">Athlete email or UUID</label>
-        <input
-          id="athlete-input"
-          type="text"
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          placeholder="athlete@example.com or 0a1b2c3d-..."
-          required
-        />
+      <label htmlFor="athlete-input">Email or UUID</label>
+      <input
+        id="athlete-input"
+        type="text"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        placeholder="athlete@example.com or 0a1b2c3d-…"
+        required
+      />
+
+      {error && <p className="error" style={{ marginTop: 10 }}>{error}</p>}
+      {info && <p className="success" style={{ marginTop: 10 }}>{info}</p>}
+
+      <div style={{ marginTop: 12 }}>
+        <button type="submit" className="primary" disabled={submitting}>
+          {submitting ? 'Adding…' : 'Add to roster'}
+        </button>
       </div>
-
-      {error && <p className="error">{error}</p>}
-      {info && <p className="success">{info}</p>}
-
-      <button type="submit" disabled={submitting}>
-        {submitting ? 'Adding...' : 'Add to roster'}
-      </button>
     </form>
   );
 }
