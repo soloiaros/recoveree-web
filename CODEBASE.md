@@ -131,7 +131,7 @@ anon keys (`eyJ...`) and the new `sb_publishable_...` keys are supported.
         └── manage
             ├── ManageTab.jsx
             ├── TeamNameEditor.jsx
-            ├── InviteAthleteForm.jsx     # Add an existing athlete by email/UUID
+            ├── InviteAthleteForm.jsx     # Add an existing athlete by email
             └── RosterManagementList.jsx  # List + remove
 ```
 
@@ -236,10 +236,13 @@ If we ever need shareable URLs per tab, swap that state for
 
 - **`TeamNameEditor`** — input + Save button, persisted via `useTeamName`
   (localStorage, scoped per coach id). Used by the header.
-- **`InviteAthleteForm`** — coach pastes an email or UUID. If it's a UUID
-  (regex match), used directly. If it's an email, looked up in `profiles`.
-  Then the resolved id is inserted into `team_roster`. Refuses duplicates and
-  non-athlete profiles. Calls `onAdded` to refresh the dashboard.
+- **`InviteAthleteForm`** — coach enters the athlete's email. We look the
+  email up case-insensitively in `profiles` (`ilike`), reject coach profiles
+  and roster duplicates, and only insert into `team_roster` once we've
+  confirmed the athlete's profile id exists — so the FK on `team_roster.athlete_id`
+  can never trigger a raw constraint error in the UI. If the email isn't in
+  `profiles`, we tell the coach the athlete needs to sign up in the iOS app first.
+  Calls `onAdded` to refresh the dashboard.
 - **`RosterManagementList`** — current roster with a "Remove" button per row.
   Removal asks for `window.confirm()`, then deletes the matching
   `team_roster` row (does **not** touch `recovery_logs`).

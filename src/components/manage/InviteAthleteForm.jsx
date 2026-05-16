@@ -2,41 +2,44 @@ import { useState } from 'react';
 import { supabase } from '../../lib/supabaseClient.js';
 import SymbolIcon from '../SymbolIcon.jsx';
 
-const UUID_REGEX =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 /**
- * Adds an athlete to the coach's roster.
+ * Adds an athlete to the coach's roster by email.
  *
- * Note: there is no Supabase email-based invite flow for the hackathon, so the
- * athlete must already exist in `profiles` (e.g. they signed up via the iOS
- * app). The coach can paste the athlete's email or UUID and we resolve to the
- * profile row before inserting into `team_roster`.
+ * The athlete must already have a Recoveree account (created in the iOS app)
+ * — otherwise no `profiles` row exists for them and the FK on `team_roster`
+ * would fail. We resolve the email to a profile id with a case-insensitive
+ * lookup before inserting, so the FK error never surfaces to the coach.
  */
 export default function InviteAthleteForm({ coachId, onAdded }) {
-  const [value, setValue] = useState('');
+  const [email, setEmail] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [info, setInfo] = useState(null);
 
-  async function resolveAthleteId(rawInput) {
-    const input = rawInput.trim();
-    if (!input) throw new Error('Enter an athlete email or UUID.');
+  async function resolveAthleteByEmail(rawEmail) {
+    const normalized = rawEmail.trim().toLowerCase();
+    if (!normalized) throw new Error("Enter the athlete's email address.");
 
-    if (UUID_REGEX.test(input)) return input;
-
+    // `ilike` is case-insensitive. Supabase Auth lowercases emails on its end,
+    // but `profiles.email` may have been written by the iOS app with arbitrary
+    // casing, so we match defensively. Emails almost never contain `_` or `%`,
+    // which would otherwise be treated as `ilike` wildcards.
     const { data, error: lookupError } = await supabase
       .from('profiles')
-      .select('id, role')
-      .eq('email', input)
+      .select('id, email, role')
+      .ilike('email', normalized)
       .maybeSingle();
 
     if (lookupError) throw lookupError;
-    if (!data) throw new Error(`No athlete found with email "${input}".`);
-    if (data.role && data.role !== 'athlete') {
-      throw new Error(`Profile "${input}" has role "${data.role}", expected "athlete".`);
+    if (!data) {
+      throw new Error(
+        `No Recoveree account found for "${normalized}". Ask the athlete to sign up in the iOS app first.`
+      );
     }
-    return data.id;
+    if (data.role === 'coach') {
+      throw new Error(`"${normalized}" is registered as a coach, not an athlete.`);
+    }
+    return data;
   }
 
   async function handleSubmit(event) {
@@ -45,24 +48,24 @@ export default function InviteAthleteForm({ coachId, onAdded }) {
     setInfo(null);
     setSubmitting(true);
     try {
-      const athleteId = await resolveAthleteId(value);
+      const athlete = await resolveAthleteByEmail(email);
 
       const { data: existing, error: existingError } = await supabase
         .from('team_roster')
         .select('id')
         .eq('coach_id', coachId)
-        .eq('athlete_id', athleteId)
+        .eq('athlete_id', athlete.id)
         .maybeSingle();
       if (existingError) throw existingError;
       if (existing) throw new Error('That athlete is already on your roster.');
 
       const { error: insertError } = await supabase
         .from('team_roster')
-        .insert({ coach_id: coachId, athlete_id: athleteId });
+        .insert({ coach_id: coachId, athlete_id: athlete.id });
       if (insertError) throw insertError;
 
-      setInfo('Athlete added to your roster.');
-      setValue('');
+      setInfo(`Added ${athlete.email ?? email.trim()} to your roster.`);
+      setEmail('');
       onAdded?.();
     } catch (err) {
       setError(err.message ?? 'Failed to add athlete.');
@@ -75,17 +78,20 @@ export default function InviteAthleteForm({ coachId, onAdded }) {
     <form className="card" onSubmit={handleSubmit}>
       <h3>Invite athlete</h3>
       <p className="muted" style={{ marginTop: 4, marginBottom: 12 }}>
-        Athletes need a Recoveree account first (created in the iOS app). Paste
-        their email or profile UUID to add them to your team.
+        Athletes must have a Recoveree account (created in the iOS app). Enter
+        their email below to add them to your team.
       </p>
 
-      <label htmlFor="athlete-input">Email or UUID</label>
+      <label htmlFor="athlete-email">Athlete email</label>
       <input
-        id="athlete-input"
-        type="text"
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        placeholder="athlete@example.com or 0a1b2c3d-…"
+        id="athlete-email"
+        type="email"
+        autoComplete="off"
+        autoCapitalize="none"
+        spellCheck="false"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        placeholder="athlete@example.com"
         required
       />
 

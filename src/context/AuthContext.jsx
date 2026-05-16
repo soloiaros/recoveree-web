@@ -38,12 +38,14 @@ export function AuthProvider({ children }) {
 
     // Email verification is disabled for the hackathon, so a session is returned
     // immediately. We use that session's user id to upsert a coach profile row.
+    // We store `data.user.email` (normalized by Supabase Auth to lowercase)
+    // rather than the raw form input, so case-insensitive lookups stay sane.
     const userId = data.user?.id;
     if (userId) {
       const { error: profileError } = await supabase.from('profiles').upsert(
         {
           id: userId,
-          email,
+          email: data.user?.email ?? email.trim().toLowerCase(),
           role: 'coach',
         },
         { onConflict: 'id' }
