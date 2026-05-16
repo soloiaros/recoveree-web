@@ -5,6 +5,8 @@ import {
   emailToInitials,
   formatRelative,
 } from '../../lib/recoveryStatus.js';
+import DailyBiometrics from '../charts/DailyBiometrics.jsx';
+import RecoveryTrajectory from '../charts/RecoveryTrajectory.jsx';
 import StatusBadge from '../StatusBadge.jsx';
 import LogTimeline from './LogTimeline.jsx';
 import FatigueMapCanvas from '../holomap/FatigueMapCanvas.jsx';
@@ -102,6 +104,11 @@ export default function AthleteDetail({ athlete, allLogs, onBack }) {
                 {latest?.ai_advice ?? 'No advice generated yet.'}
               </div>
             </div>
+          </div>
+
+          <div className="athlete-chart-grid section">
+            <RecoveryTrajectory logs={logs} />
+            <DailyBiometrics log={latest} />
           </div>
 
           <div className="card section">

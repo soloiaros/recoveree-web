@@ -1,4 +1,6 @@
 import { STATUS, summarizeTeam } from '../../lib/recoveryStatus.js';
+import ReadinessMatrix from '../charts/ReadinessMatrix.jsx';
+import TeamStrainRadar from '../charts/TeamStrainRadar.jsx';
 import SymbolIcon from '../SymbolIcon.jsx';
 import StatCard from './StatCard.jsx';
 import RecentActivityList from './RecentActivityList.jsx';
@@ -52,6 +54,11 @@ export default function OverviewTab({ teamName, athletes, allLogs, loading, onRe
           />
         </div>
       )}
+
+      <div className="analytics-grid section">
+        <ReadinessMatrix athletes={athletes} />
+        <TeamStrainRadar athletes={athletes} logs={allLogs} />
+      </div>
 
       <div className="card section">
         <div className="row-between" style={{ marginBottom: 8 }}>

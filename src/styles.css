@@ -869,6 +869,163 @@ main.app-main.app-main--wide {
   height: 48px;
 }
 
+/* ───────── Analytics charts ───────── */
+
+.analytics-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
+  gap: 18px;
+  align-items: stretch;
+}
+
+.athlete-chart-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
+  gap: 18px;
+  align-items: stretch;
+}
+
+.chart-card {
+  background: var(--bg-elevated);
+  min-height: 410px;
+  padding: 20px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--separator);
+  box-shadow: var(--shadow-md);
+  transition:
+    transform 0.26s var(--motion-spring),
+    box-shadow 0.26s var(--motion-standard),
+    border-color 0.26s var(--motion-standard),
+    background 0.26s var(--motion-standard);
+}
+
+.chart-card:hover {
+  transform: translateY(-1px);
+  border-color: var(--separator-strong);
+}
+
+.chart-card--trajectory,
+.chart-card--biometrics {
+  min-height: 340px;
+}
+
+.chart-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 10px;
+}
+
+.chart-eyebrow {
+  margin-bottom: 5px;
+  color: var(--text-tertiary);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.chart-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  padding: 6px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--accent-soft);
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--separator));
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.chart-chip--hot {
+  background: color-mix(in srgb, var(--orange) 14%, transparent);
+  border-color: color-mix(in srgb, var(--orange) 24%, var(--separator));
+  color: var(--orange);
+}
+
+.chart-stage {
+  width: 100%;
+  height: 300px;
+  min-height: 0;
+}
+
+.chart-stage--compact {
+  height: 240px;
+}
+
+.chart-tooltip {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--separator);
+  background: var(--bg-translucent);
+  box-shadow: var(--shadow-md);
+  color: var(--text-primary);
+  backdrop-filter: blur(16px);
+}
+
+.chart-tooltip strong {
+  font-size: 13px;
+}
+
+.chart-tooltip span {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.matrix-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  margin-top: 8px;
+  color: var(--text-tertiary);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.matrix-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.legend-dot--safe { background: #30d158; color: #30d158; }
+.legend-dot--danger { background: #ff453a; color: #ff453a; }
+.legend-dot--warning { background: #ffd60a; color: #ffd60a; }
+.legend-dot--anomaly { background: #64d2ff; color: #64d2ff; }
+
+.biometric-legend {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.biometric-legend span {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.biometric-legend i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
 .spinner {
   display: inline-block;
   width: 14px;
@@ -924,6 +1081,13 @@ main.app-main.app-main--wide {
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+@media (max-width: 860px) {
+  .analytics-grid,
+  .athlete-chart-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ---------- Athlete detail: 60/40 grid + holographic fatigue map ---------- */
