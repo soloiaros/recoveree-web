@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '../../lib/supabaseClient.js';
-import { emailToInitials } from '../../lib/recoveryStatus.js';
+import { displayName } from '../../lib/recoveryStatus.js';
+import Avatar from '../Avatar.jsx';
 import SymbolIcon from '../SymbolIcon.jsx';
 
 export default function RosterManagementList({ coachId, athletes, onChanged }) {
@@ -51,30 +52,39 @@ export default function RosterManagementList({ coachId, athletes, onChanged }) {
         </p>
       )}
       <div>
-        {athletes.map((athlete) => (
-          <div key={athlete.athleteId} className="roster-row">
-            <div className="row" style={{ minWidth: 0 }}>
-              <div className="avatar" aria-hidden="true">
-                {emailToInitials(athlete.email)}
-              </div>
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontWeight: 600 }}>{athlete.email}</div>
-                <div className="muted" style={{ fontSize: 12 }}>
-                  {athlete.athleteId}
+        {athletes.map((athlete) => {
+          const name = displayName(athlete);
+          const showEmailSubtext =
+            athlete.full_name && athlete.email && athlete.full_name !== athlete.email;
+          return (
+            <div key={athlete.athleteId} className="roster-row">
+              <div className="row" style={{ minWidth: 0 }}>
+                <Avatar profile={athlete} />
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontWeight: 600 }}>{name}</div>
+                  {showEmailSubtext ? (
+                    <div className="muted" style={{ fontSize: 12 }}>
+                      {athlete.email}
+                    </div>
+                  ) : (
+                    <div className="muted" style={{ fontSize: 12 }}>
+                      {athlete.athleteId}
+                    </div>
+                  )}
                 </div>
               </div>
+              <button
+                type="button"
+                className="danger"
+                onClick={() => handleRemove(athlete.athleteId)}
+                disabled={pendingId === athlete.athleteId}
+              >
+                {pendingId === athlete.athleteId && <span className="spinner" aria-hidden="true" />}
+                {pendingId === athlete.athleteId ? 'Removing...' : 'Remove'}
+              </button>
             </div>
-            <button
-              type="button"
-              className="danger"
-              onClick={() => handleRemove(athlete.athleteId)}
-              disabled={pendingId === athlete.athleteId}
-            >
-              {pendingId === athlete.athleteId && <span className="spinner" aria-hidden="true" />}
-              {pendingId === athlete.athleteId ? 'Removing...' : 'Remove'}
-            </button>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

@@ -2,9 +2,10 @@ import { useEffect, useMemo } from 'react';
 
 import {
   classifyAthlete,
-  emailToInitials,
+  displayName,
   formatRelative,
 } from '../../lib/recoveryStatus.js';
+import Avatar from '../Avatar.jsx';
 import DailyBiometrics from '../charts/DailyBiometrics.jsx';
 import RecoveryTrajectory from '../charts/RecoveryTrajectory.jsx';
 import StatusBadge from '../StatusBadge.jsx';
@@ -57,15 +58,14 @@ export default function AthleteDetail({ athlete, allLogs, onBack }) {
         <div className="athlete-detail-main">
           <div className="card">
             <div className="detail-header">
-              <div
-                className="avatar"
-                style={{ width: 56, height: 56, fontSize: 20 }}
-                aria-hidden="true"
-              >
-                {emailToInitials(athlete.email)}
-              </div>
+              <Avatar profile={athlete} size={56} />
               <div style={{ flex: 1, minWidth: 0 }}>
-                <h2 style={{ wordBreak: 'break-all' }}>{athlete.email}</h2>
+                <h2 style={{ wordBreak: 'break-word' }}>{displayName(athlete)}</h2>
+                {athlete.full_name && athlete.email && athlete.full_name !== athlete.email && (
+                  <div className="muted" style={{ fontSize: 13, marginTop: 2 }}>
+                    {athlete.email}
+                  </div>
+                )}
                 <div style={{ marginTop: 6 }} className="row">
                   <StatusBadge status={status} />
                   {latest && (

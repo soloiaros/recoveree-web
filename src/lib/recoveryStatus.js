@@ -127,3 +127,36 @@ export function emailToInitials(email = '') {
   }
   return local.slice(0, 2).toUpperCase();
 }
+
+/**
+ * Resolves a human-readable display name from a profile-shaped object.
+ * Prefers `full_name`, then falls back to email, then to a generic placeholder.
+ *
+ * Accepts both the coach profile shape (`{ full_name, email }`) and the athlete
+ * shape produced by `useTeamData` (`{ full_name, email }`).
+ */
+export function displayName(profile, fallback = '') {
+  const name = profile?.full_name?.trim?.();
+  if (name) return name;
+  const email = profile?.email?.trim?.();
+  if (email) return email;
+  return fallback;
+}
+
+/**
+ * Two-letter initials suitable for an avatar fallback, derived from full_name
+ * if available, otherwise from email.
+ */
+export function personInitials(profile) {
+  const name = profile?.full_name?.trim?.();
+  if (name) {
+    const parts = name.split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    if (parts.length === 1) {
+      return parts[0].slice(0, 2).toUpperCase();
+    }
+  }
+  return emailToInitials(profile?.email ?? '');
+}

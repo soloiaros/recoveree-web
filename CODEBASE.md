@@ -51,11 +51,19 @@ anon keys (`eyJ...`) and the new `sb_publishable_...` keys are supported.
 > Do **not** change these schemas — the iOS app and any seeders depend on them.
 
 ### `profiles`
-| Column | Type      | Notes                                  |
-|--------|-----------|----------------------------------------|
-| id     | uuid (PK) | Matches `auth.users.id`                |
-| email  | text      |                                        |
-| role   | text      | `'athlete'` or `'coach'`               |
+| Column      | Type      | Notes                                                          |
+|-------------|-----------|----------------------------------------------------------------|
+| id          | uuid (PK) | Matches `auth.users.id`                                        |
+| email       | text      | Lowercased on coach signup; whatever the iOS app stored for athletes (we look up case-insensitively) |
+| full_name   | text      | Display name; nullable                                          |
+| avatar_url  | text      | Public URL into the `avatars` storage bucket; nullable          |
+| role        | text      | `'athlete'` or `'coach'`                                       |
+
+### Storage bucket: `avatars`
+Public bucket. Filenames are `${userId}-${random}.${ext}`. The web app uploads
+new avatars from `useCoachProfile.updateProfile`, then writes the resolved
+public URL into `profiles.avatar_url`. Old files are not garbage-collected
+(known limitation, see §12).
 
 ### `team_roster`
 | Column      | Type        | Notes                                   |
@@ -103,20 +111,22 @@ anon keys (`eyJ...`) and the new `sb_publishable_...` keys are supported.
     ├── styles.css                   # Apple-inspired tokens, themes + all component styles
     ├── lib
     │   ├── supabaseClient.js        # Singleton supabase-js client + URL hardening
-    │   └── recoveryStatus.js        # Status enum, classifier, formatters
+    │   └── recoveryStatus.js        # Status enum, classifier, name/initials/format helpers
     ├── context
     │   └── AuthContext.jsx          # Session + signIn / signUp (auto coach role) / signOut
     ├── hooks
     │   ├── useTeamData.js           # roster + profiles + recovery_logs (latest + all)
+    │   ├── useCoachProfile.js       # Current coach's profiles row + avatar upload + update
     │   ├── useTeamName.js           # localStorage-backed team name
     │   └── useTheme.js              # localStorage-backed light/dark theme
     ├── pages
     │   ├── AuthPage.jsx             # Login / Signup form
     │   └── DashboardPage.jsx        # Header + PillNavBar + active tab content
     └── components
-        ├── DashboardHeader.jsx      # Brand mark + team name + user + Log out
+        ├── DashboardHeader.jsx      # Brand mark + team name + coach avatar + Log out
         ├── PillNavBar.jsx           # Floating sticky segmented control
         ├── StatusBadge.jsx          # Reusable pill status indicator
+        ├── Avatar.jsx               # Image-or-initials avatar (used everywhere)
         ├── SymbolIcon.jsx           # Small inline SVG icon set
         ├── ThemeToggle.jsx          # iOS-style dark/light switch
         ├── overview
@@ -130,6 +140,7 @@ anon keys (`eyJ...`) and the new `sb_publishable_...` keys are supported.
         │   └── LogTimeline.jsx
         └── manage
             ├── ManageTab.jsx
+            ├── ProfileEditor.jsx         # Coach's own full_name + avatar upload
             ├── TeamNameEditor.jsx
             ├── InviteAthleteForm.jsx     # Add an existing athlete by email
             └── RosterManagementList.jsx  # List + remove
@@ -174,7 +185,9 @@ anon keys (`eyJ...`) and the new `sb_publishable_...` keys are supported.
 `DashboardPage` renders three pieces:
 
 1. **`DashboardHeader`** — frosted-glass bar with brand mark, team name, the
-   coach's email, a theme toggle, and a Log out button.
+   coach's avatar + display name (from `useCoachProfile`), a theme toggle, and
+   a Log out button. Falls back to the auth email if the coach hasn't set a
+   `full_name` yet, and to gradient initials if they haven't uploaded an avatar.
 2. **`PillNavBar`** — floating, sticky-to-top, frosted-glass segmented control
    with three icon-labeled options: **Overview**, **Members**, **Manage**.
    Implements `position: sticky` + `backdrop-filter: blur(20px)`. Active state
@@ -212,15 +225,17 @@ If we ever need shareable URLs per tab, swap that state for
 
 `src/components/members/MembersTab.jsx`.
 
-- Renders a responsive grid of `<AthleteCard>` components: avatar (initials
-  derived from email), email, status badge, latest score, and "last log Xh
-  ago".
+- Renders a responsive grid of `<AthleteCard>` components: `<Avatar />` (image
+  from `profiles.avatar_url` or gradient initials fallback), display name
+  (from `profiles.full_name`, falling back to email), status badge, latest
+  score, and "last log Xh ago". The athlete's email is shown as a subtitle
+  when it differs from `full_name`.
 - Clicking a card stores the athlete's id in local state and swaps the grid
   for `<AthleteDetail>`. A "← Members" button returns to the grid.
 
 `AthleteDetail`:
-- Header with the athlete avatar, email, status badge, and last-updated
-  timestamp.
+- Header with the athlete avatar (image or initials), display name, email
+  subtitle, status badge, and last-updated timestamp.
 - Three KV cards (recovery score / sleep hours / total logs on file).
 - A highlighted card showing the latest `ai_advice` string.
 - `LogTimeline` rendering the 8 most recent logs, vertical timeline style.
@@ -234,6 +249,14 @@ If we ever need shareable URLs per tab, swap that state for
 
 `src/components/manage/ManageTab.jsx`.
 
+- **`ProfileEditor`** — coach can edit their own `full_name` and upload an
+  avatar image. Backed by `useCoachProfile`. The flow is exactly the
+  reference snippet documented in §13.1: optionally upload the file to the
+  public `avatars` Storage bucket, resolve a public URL via
+  `getPublicUrl`, then `update` the `profiles` row with the new `full_name`
+  and (if a file was uploaded) `avatar_url`. The new avatar shows in the
+  header and across the dashboard immediately because `useCoachProfile`
+  updates its local state from the `update().select()` round-trip.
 - **`TeamNameEditor`** — input + Save button, persisted via `useTeamName`
   (localStorage, scoped per coach id). Used by the header.
 - **`InviteAthleteForm`** — coach enters the athlete's email. We look the
@@ -249,7 +272,7 @@ If we ever need shareable URLs per tab, swap that state for
 
 ---
 
-## 10. Status Classifier (`lib/recoveryStatus.js`)
+## 10. Status Classifier + Identity Helpers (`lib/recoveryStatus.js`)
 
 Single source of truth. Exports:
 - `STATUS` — enum of `{ injured, needsRecovery, rested, unknown }`, each with
@@ -257,7 +280,11 @@ Single source of truth. Exports:
 - `classifyAthlete(athlete)` — returns one `STATUS` value based on
   `latestLog.recovery_score` + injury-keyword scan over `ai_advice`.
 - `summarizeTeam(athletes)` — counts per bucket; used by the Overview cards.
-- `formatDateTime`, `formatRelative`, `emailToInitials` — small UI helpers.
+- `displayName(profile, fallback?)` — preferred name string (`full_name` →
+  email → fallback). Used by every UI surface that needs to label a person.
+- `personInitials(profile)` — two-letter initials, derived from `full_name`
+  if set, otherwise from email. Used by the gradient `<Avatar />` fallback.
+- `formatDateTime`, `formatRelative`, `emailToInitials` — UI helpers.
 
 When the schema gets a real injury flag, edit `classifyAthlete` and nothing
 else needs to change.
@@ -274,6 +301,13 @@ else needs to change.
 **Show a new field from `recovery_logs`** (e.g. `hrv`):
 1. Add it to the `select(...)` lists in `useTeamData.js`.
 2. Render it in `AthleteCard`, `AthleteDetail`, and/or `RecentActivityList`.
+
+**Show a new field from `profiles`** (e.g. `phone_number`):
+1. Add it to the `select(...)` in `useTeamData.js` (for athletes) and
+   `useCoachProfile.js` (for the current coach).
+2. Spread the new field into the merged athlete object in `useTeamData`.
+3. Render it wherever needed; if it's identity-related, consider extending
+   `displayName` / `personInitials` instead of duplicating logic.
 
 **Persist team name to Supabase** (when a `teams` table exists):
 - Replace `useTeamName` with a Supabase-backed version. Keep the same return
@@ -293,6 +327,9 @@ else needs to change.
 - Injury status inferred (no `is_injured` column on `recovery_logs`).
 - No email-based invite flow — the athlete must already exist in `profiles`
   (created in the iOS app).
+- Avatar uploads use a random suffix per save, so old files accumulate in the
+  `avatars` Storage bucket forever. Clean up periodically or switch to a
+  deterministic name + cache-busting query string.
 - Errors are surfaced as plain strings; no toast system.
 - RLS is off — anyone with the anon key can read all data.
 
@@ -305,3 +342,31 @@ else needs to change.
 - [x] **Phase 3** — Roster management (Add/Remove athlete).
 - [x] **Phase 4** — Roster + profiles + recovery_logs fetch with manual Refresh.
 - [x] **Phase 5** — Tabbed Apple-inspired UI: Overview / Members / Manage with floating pill nav.
+- [x] **Phase 6** — Real names + avatars: `profiles.full_name` + `profiles.avatar_url`,
+      shared `<Avatar />` component, `useCoachProfile` hook, profile editor in Manage tab.
+
+### 13.1 Avatar upload reference flow
+
+The exact pattern implemented in `useCoachProfile.updateProfile`:
+
+```js
+// 1. Optionally upload to the public `avatars` bucket
+if (file) {
+  const ext = file.name.split('.').pop();
+  const fileName = `${userId}-${Math.random()}.${ext}`;
+  const { error } = await supabase.storage.from('avatars').upload(fileName, file);
+  if (!error) {
+    const { data } = supabase.storage.from('avatars').getPublicUrl(fileName);
+    avatarUrl = data.publicUrl;
+  }
+}
+
+// 2. Update the profile row
+const updateData = { full_name: fullName };
+if (avatarUrl) updateData.avatar_url = avatarUrl;
+await supabase.from('profiles').update(updateData).eq('id', userId);
+```
+
+The hook hardens that snippet by surfacing upload/update errors instead of
+swallowing them and by re-selecting the row so callers see the new state
+without a manual refetch.

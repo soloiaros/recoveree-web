@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useCoachProfile } from '../hooks/useCoachProfile.js';
 import { useTeamData } from '../hooks/useTeamData.js';
 import { useTeamName } from '../hooks/useTeamName.js';
 import DashboardHeader from '../components/DashboardHeader.jsx';
@@ -21,13 +22,21 @@ export default function DashboardPage({ theme, onThemeToggle }) {
 
   const { athletes, allLogs, loading, error, refresh } = useTeamData(coachId);
   const { teamName, setTeamName } = useTeamName(coachId);
+  const {
+    profile: coachProfile,
+    error: profileError,
+    updateProfile: updateCoachProfile,
+  } = useCoachProfile(coachId);
 
   const [activeTab, setActiveTab] = useState('overview');
+
+  const combinedError = error ?? profileError;
 
   return (
     <div className="app-shell">
       <DashboardHeader
         teamName={teamName}
+        coachProfile={coachProfile}
         theme={theme}
         onThemeToggle={onThemeToggle}
       />
@@ -35,11 +44,11 @@ export default function DashboardPage({ theme, onThemeToggle }) {
       <PillNavBar tabs={TABS} activeId={activeTab} onChange={setActiveTab} />
 
       <main className="app-main">
-        {error && (
+        {combinedError && (
           <div className="card section" role="alert">
             <p className="error state-message state-message--error" style={{ margin: 0 }}>
               <SymbolIcon name="cross" size={14} />
-              {error}
+              {combinedError}
             </p>
           </div>
         )}
@@ -65,6 +74,8 @@ export default function DashboardPage({ theme, onThemeToggle }) {
             teamName={teamName}
             onTeamNameChange={setTeamName}
             onRosterChange={refresh}
+            coachProfile={coachProfile}
+            onCoachProfileSave={updateCoachProfile}
           />
         )}
       </main>

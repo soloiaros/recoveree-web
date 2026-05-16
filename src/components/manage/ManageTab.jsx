@@ -1,4 +1,5 @@
 import SymbolIcon from '../SymbolIcon.jsx';
+import ProfileEditor from './ProfileEditor.jsx';
 import TeamNameEditor from './TeamNameEditor.jsx';
 import InviteAthleteForm from './InviteAthleteForm.jsx';
 import RosterManagementList from './RosterManagementList.jsx';
@@ -9,6 +10,8 @@ export default function ManageTab({
   teamName,
   onTeamNameChange,
   onRosterChange,
+  coachProfile,
+  onCoachProfileSave,
 }) {
   return (
     <div className="section stack page-panel" style={{ gap: 16 }}>
@@ -17,6 +20,7 @@ export default function ManageTab({
         Manage
       </h1>
 
+      <ProfileEditor profile={coachProfile} onSave={onCoachProfileSave} />
       <TeamNameEditor teamName={teamName} onSave={onTeamNameChange} />
       <InviteAthleteForm coachId={coachId} onAdded={onRosterChange} />
       <RosterManagementList

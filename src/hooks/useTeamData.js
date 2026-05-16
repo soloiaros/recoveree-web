@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabaseClient.js';
  * Loads a coach's roster, the linked athlete profiles, and their recovery logs.
  *
  * Returns:
- *   - athletes: Array<{ athleteId, email, role, latestLog }>
+ *   - athletes: Array<{ athleteId, email, full_name, avatar_url, role, latestLog }>
  *   - allLogs:  Array<recovery_log> across the entire team, newest first
  *   - loading, error, refresh()
  *
@@ -40,7 +40,10 @@ export function useTeamData(coachId) {
       }
 
       const [profilesRes, logsRes] = await Promise.all([
-        supabase.from('profiles').select('id, email, role').in('id', athleteIds),
+        supabase
+          .from('profiles')
+          .select('id, email, full_name, avatar_url, role')
+          .in('id', athleteIds),
         supabase
           .from('recovery_logs')
           .select('id, athlete_id, sleep_hours, recovery_score, ai_advice, created_at')
@@ -66,6 +69,8 @@ export function useTeamData(coachId) {
         return {
           athleteId,
           email: profile?.email ?? '(unknown email)',
+          full_name: profile?.full_name ?? null,
+          avatar_url: profile?.avatar_url ?? null,
           role: profile?.role ?? 'athlete',
           latestLog: latestLogByAthlete.get(athleteId) ?? null,
         };
