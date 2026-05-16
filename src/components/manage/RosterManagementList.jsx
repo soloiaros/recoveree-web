@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '../../lib/supabaseClient.js';
 import { emailToInitials } from '../../lib/recoveryStatus.js';
+import SymbolIcon from '../SymbolIcon.jsx';
 
 export default function RosterManagementList({ coachId, athletes, onChanged }) {
   const [pendingId, setPendingId] = useState(null);
@@ -32,6 +33,9 @@ export default function RosterManagementList({ coachId, athletes, onChanged }) {
   if (athletes.length === 0) {
     return (
       <div className="card empty-state">
+        <div className="empty-state__icon">
+          <SymbolIcon name="person" size={20} />
+        </div>
         Your roster is empty. Use the form above to add an athlete.
       </div>
     );
@@ -40,7 +44,12 @@ export default function RosterManagementList({ coachId, athletes, onChanged }) {
   return (
     <div className="card">
       <h3 style={{ marginBottom: 8 }}>Current roster</h3>
-      {error && <p className="error">{error}</p>}
+      {error && (
+        <p className="error state-message state-message--error">
+          <SymbolIcon name="cross" size={14} />
+          {error}
+        </p>
+      )}
       <div>
         {athletes.map((athlete) => (
           <div key={athlete.athleteId} className="roster-row">
@@ -61,7 +70,8 @@ export default function RosterManagementList({ coachId, athletes, onChanged }) {
               onClick={() => handleRemove(athlete.athleteId)}
               disabled={pendingId === athlete.athleteId}
             >
-              {pendingId === athlete.athleteId ? 'Removing…' : 'Remove'}
+              {pendingId === athlete.athleteId && <span className="spinner" aria-hidden="true" />}
+              {pendingId === athlete.athleteId ? 'Removing...' : 'Remove'}
             </button>
           </div>
         ))}

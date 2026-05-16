@@ -4,17 +4,18 @@ import { useTeamData } from '../hooks/useTeamData.js';
 import { useTeamName } from '../hooks/useTeamName.js';
 import DashboardHeader from '../components/DashboardHeader.jsx';
 import PillNavBar from '../components/PillNavBar.jsx';
+import SymbolIcon from '../components/SymbolIcon.jsx';
 import OverviewTab from '../components/overview/OverviewTab.jsx';
 import MembersTab from '../components/members/MembersTab.jsx';
 import ManageTab from '../components/manage/ManageTab.jsx';
 
 const TABS = [
-  { id: 'overview', label: 'Overview' },
-  { id: 'members', label: 'Members' },
-  { id: 'manage', label: 'Manage' },
+  { id: 'overview', label: 'Overview', icon: 'activity' },
+  { id: 'members', label: 'Members', icon: 'person' },
+  { id: 'manage', label: 'Manage', icon: 'grid' },
 ];
 
-export default function DashboardPage() {
+export default function DashboardPage({ theme, onThemeToggle }) {
   const { user } = useAuth();
   const coachId = user?.id;
 
@@ -25,14 +26,21 @@ export default function DashboardPage() {
 
   return (
     <div className="app-shell">
-      <DashboardHeader teamName={teamName} />
+      <DashboardHeader
+        teamName={teamName}
+        theme={theme}
+        onThemeToggle={onThemeToggle}
+      />
 
       <PillNavBar tabs={TABS} activeId={activeTab} onChange={setActiveTab} />
 
       <main className="app-main">
         {error && (
           <div className="card section" role="alert">
-            <p className="error" style={{ margin: 0 }}>{error}</p>
+            <p className="error state-message state-message--error" style={{ margin: 0 }}>
+              <SymbolIcon name="cross" size={14} />
+              {error}
+            </p>
           </div>
         )}
 

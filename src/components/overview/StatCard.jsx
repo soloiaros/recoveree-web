@@ -1,10 +1,12 @@
+import SymbolIcon from '../SymbolIcon.jsx';
+
 export default function StatCard({ label, value, total, color, icon }) {
   const ratio = total > 0 ? Math.min(1, value / total) : 0;
   return (
     <div className="stat-card" style={{ '--accent-color': color }}>
       <div className="row-between">
         <div className="stat-card__icon" aria-hidden="true">
-          {icon}
+          <SymbolIcon name={icon} size={20} />
         </div>
         <span className="muted" style={{ fontSize: 12 }}>
           {total > 0 ? `${Math.round(ratio * 100)}%` : '—'}

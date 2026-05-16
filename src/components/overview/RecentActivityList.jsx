@@ -1,4 +1,5 @@
 import { formatRelative } from '../../lib/recoveryStatus.js';
+import SymbolIcon from '../SymbolIcon.jsx';
 
 export default function RecentActivityList({ logs, athletes }) {
   const emailById = new Map(athletes.map((a) => [a.athleteId, a.email]));
@@ -7,6 +8,9 @@ export default function RecentActivityList({ logs, athletes }) {
   if (recent.length === 0) {
     return (
       <div className="empty-state">
+        <div className="empty-state__icon">
+          <SymbolIcon name="activity" size={20} />
+        </div>
         No recovery logs from your team yet.
       </div>
     );

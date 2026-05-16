@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import SymbolIcon from '../SymbolIcon.jsx';
 
 export default function TeamNameEditor({ teamName, onSave }) {
   const [draft, setDraft] = useState(teamName);
@@ -33,7 +34,12 @@ export default function TeamNameEditor({ teamName, onSave }) {
 
       <div className="row" style={{ marginTop: 12 }}>
         <button type="submit" className="primary">Save</button>
-        {saved && <span className="success">Saved</span>}
+        {saved && (
+          <span className="success state-message">
+            <SymbolIcon name="check" size={14} />
+            Saved
+          </span>
+        )}
       </div>
     </form>
   );

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '../../lib/supabaseClient.js';
+import SymbolIcon from '../SymbolIcon.jsx';
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -88,12 +89,23 @@ export default function InviteAthleteForm({ coachId, onAdded }) {
         required
       />
 
-      {error && <p className="error" style={{ marginTop: 10 }}>{error}</p>}
-      {info && <p className="success" style={{ marginTop: 10 }}>{info}</p>}
+      {error && (
+        <p className="error state-message state-message--error" style={{ marginTop: 10 }}>
+          <SymbolIcon name="cross" size={14} />
+          {error}
+        </p>
+      )}
+      {info && (
+        <p className="success state-message state-message--success" style={{ marginTop: 10 }}>
+          <SymbolIcon name="check" size={14} />
+          {info}
+        </p>
+      )}
 
       <div style={{ marginTop: 12 }}>
         <button type="submit" className="primary" disabled={submitting}>
-          {submitting ? 'Adding…' : 'Add to roster'}
+          {submitting && <span className="spinner" aria-hidden="true" />}
+          {submitting ? 'Adding...' : 'Add to roster'}
         </button>
       </div>
     </form>

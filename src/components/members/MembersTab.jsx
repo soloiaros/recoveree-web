@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import SymbolIcon from '../SymbolIcon.jsx';
 import AthleteCard from './AthleteCard.jsx';
 import AthleteDetail from './AthleteDetail.jsx';
 
@@ -20,9 +21,12 @@ export default function MembersTab({ athletes, allLogs }) {
   }
 
   return (
-    <div className="section">
+    <div className="section page-panel">
       <div className="row-between" style={{ marginBottom: 16 }}>
-        <h1>Members</h1>
+        <h1 className="section-title">
+          <SymbolIcon name="person" size={22} />
+          Members
+        </h1>
         <span className="muted" style={{ fontSize: 13 }}>
           {athletes.length} {athletes.length === 1 ? 'athlete' : 'athletes'}
         </span>
@@ -30,6 +34,9 @@ export default function MembersTab({ athletes, allLogs }) {
 
       {athletes.length === 0 ? (
         <div className="card empty-state">
+          <div className="empty-state__icon">
+            <SymbolIcon name="person" size={20} />
+          </div>
           You haven't added any athletes yet. Switch to the Manage tab to invite some.
         </div>
       ) : (

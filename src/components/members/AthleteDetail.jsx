@@ -55,7 +55,7 @@ export default function AthleteDetail({ athlete, allLogs, onBack }) {
           </div>
         </div>
 
-        <div className="kv-card" style={{ background: 'rgba(0,122,255,0.06)' }}>
+        <div className="kv-card advice-card">
           <div className="kv-card__label" style={{ color: 'var(--accent)' }}>
             Current AI advice
           </div>

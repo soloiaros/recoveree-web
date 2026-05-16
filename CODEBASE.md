@@ -18,7 +18,7 @@ without reading the rest of the codebase first.
 | Build tool     | Vite 5                                |
 | Backend        | Supabase (Postgres + Auth)            |
 | Data client    | `@supabase/supabase-js` v2 (browser)  |
-| Styling        | Hand-rolled tokens + CSS in `src/styles.css`, Apple-inspired (system fonts, frosted-glass nav, soft shadows). **No Tailwind / MUI / etc.** Replace later if/when a real design system arrives. |
+| Styling        | Hand-rolled tokens + CSS in `src/styles.css`, Apple-inspired (system fonts, dark/light themes, SF Symbol-like inline icons, frosted glass, soft shadows). **No Tailwind / MUI / etc.** Replace later if/when a real design system arrives. |
 | State / routing| Local component state + a single `AuthContext`. **No React Router.** Tabs are tracked in `useState` inside `DashboardPage`. |
 
 ---
@@ -100,7 +100,7 @@ anon keys (`eyJ...`) and the new `sb_publishable_...` keys are supported.
 └── src
     ├── main.jsx                     # React root + <AuthProvider>
     ├── App.jsx                      # AuthPage vs DashboardPage based on session
-    ├── styles.css                   # Apple-inspired tokens + all component styles
+    ├── styles.css                   # Apple-inspired tokens, themes + all component styles
     ├── lib
     │   ├── supabaseClient.js        # Singleton supabase-js client + URL hardening
     │   └── recoveryStatus.js        # Status enum, classifier, formatters
@@ -108,7 +108,8 @@ anon keys (`eyJ...`) and the new `sb_publishable_...` keys are supported.
     │   └── AuthContext.jsx          # Session + signIn / signUp (auto coach role) / signOut
     ├── hooks
     │   ├── useTeamData.js           # roster + profiles + recovery_logs (latest + all)
-    │   └── useTeamName.js           # localStorage-backed team name
+    │   ├── useTeamName.js           # localStorage-backed team name
+    │   └── useTheme.js              # localStorage-backed light/dark theme
     ├── pages
     │   ├── AuthPage.jsx             # Login / Signup form
     │   └── DashboardPage.jsx        # Header + PillNavBar + active tab content
@@ -116,6 +117,8 @@ anon keys (`eyJ...`) and the new `sb_publishable_...` keys are supported.
         ├── DashboardHeader.jsx      # Brand mark + team name + user + Log out
         ├── PillNavBar.jsx           # Floating sticky segmented control
         ├── StatusBadge.jsx          # Reusable pill status indicator
+        ├── SymbolIcon.jsx           # Small inline SVG icon set
+        ├── ThemeToggle.jsx          # iOS-style dark/light switch
         ├── overview
         │   ├── OverviewTab.jsx
         │   ├── StatCard.jsx
@@ -170,12 +173,13 @@ anon keys (`eyJ...`) and the new `sb_publishable_...` keys are supported.
 
 `DashboardPage` renders three pieces:
 
-1. **`DashboardHeader`** — solid white bar with brand mark, team name, the
-   coach's email, and a Log out button.
+1. **`DashboardHeader`** — frosted-glass bar with brand mark, team name, the
+   coach's email, a theme toggle, and a Log out button.
 2. **`PillNavBar`** — floating, sticky-to-top, frosted-glass segmented control
-   with three options: **Overview**, **Members**, **Manage**. Implements
-   `position: sticky` + `backdrop-filter: blur(20px)`. Active state uses a
-   white pill with subtle shadow (matching iOS segmented control behavior).
+   with three icon-labeled options: **Overview**, **Members**, **Manage**.
+   Implements `position: sticky` + `backdrop-filter: blur(20px)`. Active state
+   uses an elevated pill with subtle shadow (matching iOS segmented control
+   behavior across light and dark themes).
 3. **`<main class="app-main">`** — renders the active tab.
 
 The active tab lives in a single `useState('overview')` inside `DashboardPage`.

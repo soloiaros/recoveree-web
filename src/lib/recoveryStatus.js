@@ -13,28 +13,28 @@ export const STATUS = {
     label: 'Injury recovery',
     short: 'Injured',
     color: '#ff3b30',
-    icon: '+',
+    icon: 'cross',
   },
   needsRecovery: {
     id: 'needsRecovery',
     label: 'Needs recovery',
     short: 'Recovering',
     color: '#ff9500',
-    icon: '~',
+    icon: 'wave',
   },
   rested: {
     id: 'rested',
     label: 'Fully rested',
     short: 'Rested',
     color: '#34c759',
-    icon: '✓',
+    icon: 'check',
   },
   unknown: {
     id: 'unknown',
     label: 'No data yet',
     short: 'No data',
     color: '#8e8e93',
-    icon: '?',
+    icon: 'question',
   },
 };
 
