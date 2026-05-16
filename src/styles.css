@@ -222,6 +222,13 @@ main.app-main {
   padding: 0 24px 64px;
 }
 
+/* Detail views (e.g. an athlete's holographic fatigue map) need more
+   horizontal room than the standard cap. We opt into a wider track via
+   this modifier so we don't reflow the rest of the dashboard. */
+main.app-main.app-main--wide {
+  max-width: 1320px;
+}
+
 .section { margin-top: 28px; }
 
 .page-panel {
@@ -917,4 +924,49 @@ main.app-main {
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+/* ---------- Athlete detail: 60/40 grid + holographic fatigue map ---------- */
+
+.athlete-detail-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.athlete-detail-main {
+  min-width: 0;
+}
+
+.athlete-detail-aside {
+  position: sticky;
+  top: 96px; /* clears the floating pill nav */
+}
+
+@media (max-width: 960px) {
+  .athlete-detail-grid {
+    grid-template-columns: 1fr;
+  }
+  .athlete-detail-aside {
+    position: static;
+  }
+}
+
+.holomap-float {
+  pointer-events: auto;
+}
+
+.holomap-float__stage {
+  position: relative;
+  width: 100%;
+  min-height: 680px;
+  aspect-ratio: 3 / 5;
+}
+
+.holomap-float__stage canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  outline: none;
 }
