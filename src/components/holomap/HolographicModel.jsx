@@ -5,6 +5,7 @@ import * as THREE from 'three';
 
 import { resolveFatigueMarkers } from './fatigueZones.js';
 import SymbolIcon from '../SymbolIcon.jsx';
+import { supabase } from '../../lib/supabaseClient.js';
 
 /**
  * HolographicModel
@@ -15,6 +16,7 @@ import SymbolIcon from '../SymbolIcon.jsx';
  * consistent, glowing cyan wireframe that doubles as a fatigue canvas.
  */
 export default function HolographicModel({
+  athleteId,
   modelPath = '/models/humanoid.glb',
   severeFatigue = [],
   mildFatigue = [],
@@ -103,6 +105,7 @@ export default function HolographicModel({
           key={`severe-${m.id}`}
           marker={m}
           severity="severe"
+          athleteId={athleteId}
           isOpen={activeMarkerId === `severe-${m.id}`}
           onToggle={(e) => {
             e.stopPropagation();
@@ -116,6 +119,7 @@ export default function HolographicModel({
           key={`mild-${m.id}`}
           marker={m}
           severity="mild"
+          athleteId={athleteId}
           isOpen={activeMarkerId === `mild-${m.id}`}
           onToggle={(e) => {
             e.stopPropagation();
@@ -134,8 +138,10 @@ useGLTF.preload('/models/humanoid.glb');
  * A single "danger zone" glow: an interior point light + a 2D UI marker.
  * The 2D marker is interactable and opens a detail dialog.
  */
-function FatigueMarker({ marker, severity, isOpen, onToggle, onClose }) {
+function FatigueMarker({ marker, severity, athleteId, isOpen, onToggle, onClose }) {
   const lightRef = useRef(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
 
   const isSevere = severity === 'severe';
   const lightColor = isSevere ? '#ff3b30' : '#ff9500';
@@ -150,6 +156,25 @@ function FatigueMarker({ marker, severity, isOpen, onToggle, onClose }) {
     const pulse = 0.7 + Math.sin(t * 2.4 + phase) * 0.3;
     if (lightRef.current) lightRef.current.intensity = (isSevere ? 1.8 : 1.4) * pulse;
   });
+
+  const handleOverride = async () => {
+    if (isSubmitting || isSuccess) return;
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase
+        .from('interventions')
+        .insert({
+          athlete_id: athleteId,
+          message: 'CRITICAL: Training paused by Coach. Mandatory rest day initiated.',
+        });
+      if (error) throw error;
+      setIsSuccess(true);
+    } catch (err) {
+      console.error('[FatigueMarker] Failed to send override:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <group position={marker.position}>
@@ -187,6 +212,24 @@ function FatigueMarker({ marker, severity, isOpen, onToggle, onClose }) {
                 placeholder={`Detailed feedback for ${marker.label.toLowerCase()}...`}
                 autoFocus
               />
+              <button
+                type="button"
+                className={`primary ${isSuccess ? 'success-btn' : ''}`}
+                style={{ width: '100%', marginTop: 8 }}
+                onClick={handleOverride}
+                disabled={isSubmitting || isSuccess}
+              >
+                {isSubmitting ? (
+                  <>
+                    <span className="spinner" />
+                    Sending Override...
+                  </>
+                ) : isSuccess ? (
+                  'Override Sent'
+                ) : (
+                  'Override Training'
+                )}
+              </button>
             </div>
           )}
         </div>

@@ -5,6 +5,7 @@ import { useThree } from '@react-three/fiber';
 
 import { resolveFatigueMarkers } from './fatigueZones.js';
 import SymbolIcon from '../SymbolIcon.jsx';
+import { supabase } from '../../lib/supabaseClient.js';
 
 /**
  * Stand-in humanoid built from primitives. Used as the Suspense / error
@@ -12,6 +13,7 @@ import SymbolIcon from '../SymbolIcon.jsx';
  * dashboard visually complete during development and CI builds.
  */
 export default function ProceduralHumanoid({
+  athleteId,
   severeFatigue = [],
   mildFatigue = [],
   scale = 1,
@@ -101,6 +103,7 @@ export default function ProceduralHumanoid({
           key={`severe-${m.id}`}
           marker={m}
           severity="severe"
+          athleteId={athleteId}
           isOpen={activeMarkerId === `severe-${m.id}`}
           onToggle={(e) => {
             e.stopPropagation();
@@ -114,6 +117,7 @@ export default function ProceduralHumanoid({
           key={`mild-${m.id}`}
           marker={m}
           severity="mild"
+          athleteId={athleteId}
           isOpen={activeMarkerId === `mild-${m.id}`}
           onToggle={(e) => {
             e.stopPropagation();
@@ -126,9 +130,31 @@ export default function ProceduralHumanoid({
   );
 }
 
-function ProcFatigueMarker({ marker, severity, isOpen, onToggle, onClose }) {
+function ProcFatigueMarker({ marker, severity, athleteId, isOpen, onToggle, onClose }) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+
   const isSevere = severity === 'severe';
   const lightColor = isSevere ? '#ff3b30' : '#ff9500';
+
+  const handleOverride = async () => {
+    if (isSubmitting || isSuccess) return;
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase
+        .from('interventions')
+        .insert({
+          athlete_id: athleteId,
+          message: 'CRITICAL: Training paused by Coach. Mandatory rest day initiated.',
+        });
+      if (error) throw error;
+      setIsSuccess(true);
+    } catch (err) {
+      console.error('[ProcFatigueMarker] Failed to send override:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <group position={marker.position}>
@@ -160,6 +186,24 @@ function ProcFatigueMarker({ marker, severity, isOpen, onToggle, onClose }) {
                 placeholder={`Detailed feedback for ${marker.label.toLowerCase()}...`}
                 autoFocus
               />
+              <button
+                type="button"
+                className={`primary ${isSuccess ? 'success-btn' : ''}`}
+                style={{ width: '100%', marginTop: 8 }}
+                onClick={handleOverride}
+                disabled={isSubmitting || isSuccess}
+              >
+                {isSubmitting ? (
+                  <>
+                    <span className="spinner" />
+                    Sending Override...
+                  </>
+                ) : isSuccess ? (
+                  'Override Sent'
+                ) : (
+                  'Override Training'
+                )}
+              </button>
             </div>
           )}
         </div>

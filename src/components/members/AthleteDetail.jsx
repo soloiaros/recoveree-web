@@ -125,7 +125,11 @@ export default function AthleteDetail({ athlete, allLogs, onBack }) {
         <aside className="athlete-detail-aside">
           <div className="holomap-float" aria-label="Holographic fatigue map">
             <div className="holomap-float__stage">
-              <FatigueMapCanvas severeFatigue={severeFatigue} mildFatigue={mildFatigue} />
+              <FatigueMapCanvas
+                athleteId={athlete.athleteId}
+                severeFatigue={severeFatigue}
+                mildFatigue={mildFatigue}
+              />
             </div>
           </div>
         </aside>

@@ -22,6 +22,7 @@ import ProceduralHumanoid from './ProceduralHumanoid.jsx';
  *     fails to load (lets the dashboard ship before the art asset does)
  */
 export default function FatigueMapCanvas({
+  athleteId,
   severeFatigue = [],
   mildFatigue = [],
   modelPath = '/models/humanoid.glb',
@@ -50,6 +51,7 @@ export default function FatigueMapCanvas({
       </Suspense>
 
       <ModelWithFallback
+        athleteId={athleteId}
         severeFatigue={severeFatigue}
         mildFatigue={mildFatigue}
         modelPath={modelPath}
@@ -72,11 +74,12 @@ export default function FatigueMapCanvas({
  * Try to load the GLB; on Suspense or error, render the procedural humanoid
  * so the panel is never blank.
  */
-function ModelWithFallback({ severeFatigue, mildFatigue, modelPath }) {
+function ModelWithFallback({ athleteId, severeFatigue, mildFatigue, modelPath }) {
   return (
     <GLBErrorBoundary
       fallback={
         <ProceduralHumanoid
+          athleteId={athleteId}
           severeFatigue={severeFatigue}
           mildFatigue={mildFatigue}
         />
@@ -86,6 +89,7 @@ function ModelWithFallback({ severeFatigue, mildFatigue, modelPath }) {
         fallback={
           <>
             <ProceduralHumanoid
+              athleteId={athleteId}
               severeFatigue={severeFatigue}
               mildFatigue={mildFatigue}
             />
@@ -96,6 +100,7 @@ function ModelWithFallback({ severeFatigue, mildFatigue, modelPath }) {
         }
       >
         <HolographicModel
+          athleteId={athleteId}
           modelPath={modelPath}
           severeFatigue={severeFatigue}
           mildFatigue={mildFatigue}
