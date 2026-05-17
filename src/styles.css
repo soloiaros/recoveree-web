@@ -1316,3 +1316,9 @@ main.app-main.app-main--wide {
   box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
   outline: none;
 }
+
+.success-btn {
+  background: var(--green) !important;
+  border-color: var(--green) !important;
+  box-shadow: 0 4px 14px 0 color-mix(in srgb, var(--green) 30%, transparent) !important;
+}

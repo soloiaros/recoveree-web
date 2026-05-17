@@ -131,24 +131,45 @@ export default function ProceduralHumanoid({
 }
 
 function ProcFatigueMarker({ marker, severity, athleteId, isOpen, onToggle, onClose }) {
+  const [feedback, setFeedback] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
   const isSevere = severity === 'severe';
   const lightColor = isSevere ? '#ff3b30' : '#ff9500';
 
+  // Reset state when the dialog is closed so it's fresh when reopened
+  useEffect(() => {
+    if (!isOpen) {
+      setIsSuccess(false);
+      setIsSubmitting(false);
+    }
+  }, [isOpen]);
+
   const handleOverride = async () => {
     if (isSubmitting || isSuccess) return;
     setIsSubmitting(true);
+
+    // Use actual feedback if provided, else fallback to critical default
+    const finalMessage = feedback.trim()
+      ? `COACH [${marker.label}]: ${feedback.trim()}`
+      : `CRITICAL [${marker.label}]: Training paused by Coach. Mandatory rest day initiated.`;
+
     try {
       const { error } = await supabase
         .from('interventions')
         .insert({
           athlete_id: athleteId,
-          message: 'CRITICAL: Training paused by Coach. Mandatory rest day initiated.',
+          message: finalMessage,
         });
       if (error) throw error;
       setIsSuccess(true);
+      setFeedback(''); // Clear text on success
+
+      // Reset the button state after 2.5s so they can send another if needed
+      setTimeout(() => {
+        setIsSuccess(false);
+      }, 2500);
     } catch (err) {
       console.error('[ProcFatigueMarker] Failed to send override:', err);
     } finally {
@@ -184,6 +205,8 @@ function ProcFatigueMarker({ marker, severity, athleteId, isOpen, onToggle, onCl
               <textarea
                 className="fatigue-dialog__textarea"
                 placeholder={`Detailed feedback for ${marker.label.toLowerCase()}...`}
+                value={feedback}
+                onChange={(e) => setFeedback(e.target.value)}
                 autoFocus
               />
               <button
