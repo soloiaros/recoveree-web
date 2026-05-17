@@ -1235,7 +1235,7 @@ main.app-main.app-main--wide {
   padding: 0;
   cursor: pointer;
   background: #fff;
-  box-shadow: 0 0 12px var(--marker-color), inset 0 0 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2), inset 0 0 4px rgba(0, 0, 0, 0.1);
   transition: transform 0.22s var(--motion-spring), box-shadow 0.22s ease;
   display: flex;
   align-items: center;
@@ -1244,7 +1244,7 @@ main.app-main.app-main--wide {
 
 .fatigue-marker-btn:hover {
   transform: scale(1.15);
-  box-shadow: 0 0 18px var(--marker-color), inset 0 0 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25), inset 0 0 4px rgba(0, 0, 0, 0.1);
   z-index: 100;
 }
 

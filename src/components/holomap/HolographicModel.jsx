@@ -7,14 +7,75 @@ import { resolveFatigueMarkers } from './fatigueZones.js';
 import SymbolIcon from '../SymbolIcon.jsx';
 import { supabase } from '../../lib/supabaseClient.js';
 
+const MAX_MARKERS = 40;
+
 /**
- * HolographicModel
- *
- * Loads a humanoid `.glb` and re-skins it as a high-tech wireframe hologram.
- * We intentionally ignore every native material on the mesh — the dashboard
- * doesn't care what the source artist textured it with. We just want a
- * consistent, glowing cyan wireframe that doubles as a fatigue canvas.
+ * Custom Shader for Holographic Model with Intersection Highlights
  */
+const HolographicShader = {
+  uniforms: {
+    uTime: { value: 0 },
+    uBaseColor: { value: new THREE.Color('#7fdfff') },
+    uBaseOpacity: { value: 0.25 },
+    uSeverePositions: { value: Array.from({ length: MAX_MARKERS }, () => new THREE.Vector3()) },
+    uSevereCount: { value: 0 },
+    uMildPositions: { value: Array.from({ length: MAX_MARKERS }, () => new THREE.Vector3()) },
+    uMildCount: { value: 0 },
+  },
+  vertexShader: `
+    varying vec3 vWorldPosition;
+    void main() {
+      vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+      vWorldPosition = worldPosition.xyz;
+      gl_Position = projectionMatrix * viewMatrix * worldPosition;
+    }
+  `,
+  fragmentShader: `
+    uniform float uTime;
+    uniform vec3 uBaseColor;
+    uniform float uBaseOpacity;
+    uniform vec3 uSeverePositions[${MAX_MARKERS}];
+    uniform int uSevereCount;
+    uniform vec3 uMildPositions[${MAX_MARKERS}];
+    uniform int uMildCount;
+    varying vec3 vWorldPosition;
+
+    void main() {
+      float pulse = 0.8 + sin(uTime * 2.5) * 0.2;
+      vec3 severeColor = vec3(1.0, 0.05, 0.05); // Vivid Red
+      vec3 mildColor = vec3(1.0, 0.9, 0.0);    // Vivid Yellow
+
+      float sH = 0.0;
+      for (int i = 0; i < ${MAX_MARKERS}; i++) {
+        if (i >= uSevereCount) break;
+        sH = max(sH, 1.0 - smoothstep(0.0, 0.35, distance(vWorldPosition, uSeverePositions[i])));
+      }
+
+      float mH = 0.0;
+      for (int i = 0; i < ${MAX_MARKERS}; i++) {
+        if (i >= uMildCount) break;
+        mH = max(mH, 1.0 - smoothstep(0.0, 0.28, distance(vWorldPosition, uMildPositions[i])));
+      }
+
+      vec3 finalCol = uBaseColor;
+      float finalAlpha = uBaseOpacity;
+
+      if (sH > 0.0) {
+        finalCol = mix(finalCol, severeColor, sH);
+        finalCol += severeColor * sH * pulse * 6.0; // Intense Red Glow
+        finalAlpha = max(finalAlpha, sH * 0.9);
+      } else if (mH > 0.0) {
+        finalCol = mix(finalCol, mildColor, mH);
+        finalCol += mildColor * mH * pulse * 4.0;   // Intense Yellow Glow
+        finalAlpha = max(finalAlpha, mH * 0.8);
+      }
+
+      gl_FragColor = vec4(finalCol, finalAlpha);
+    }
+
+  `,
+};
+
 export default function HolographicModel({
   athleteId,
   modelPath = '/models/humanoid.glb',
@@ -25,10 +86,11 @@ export default function HolographicModel({
   rotation = [0, 0, 0],
 }) {
   const { scene } = useGLTF(modelPath);
-  const { gl } = useThree();
   const cloned = useMemo(() => scene.clone(true), [scene]);
-
   const [activeMarkerId, setActiveMarkerId] = useState(null);
+
+  const severeMarkers = useMemo(() => resolveFatigueMarkers(severeFatigue), [severeFatigue]);
+  const mildMarkers = useMemo(() => resolveFatigueMarkers(mildFatigue), [mildFatigue]);
 
   const modelTransform = useMemo(() => {
     const box = new THREE.Box3().setFromObject(cloned);
@@ -43,30 +105,36 @@ export default function HolographicModel({
     };
   }, [cloned]);
 
-  const holoMaterial = useMemo(
-    () =>
-      new THREE.MeshStandardMaterial({
-        color: '#7fdfff',
-        emissive: '#1aa6d6',
-        emissiveIntensity: 0.55,
-        wireframe: true,
-        transparent: true,
-        opacity: 0.3,
-        depthWrite: false,
-        roughness: 0.4,
-        metalness: 0.15,
-        side: THREE.DoubleSide,
-      }),
-    []
-  );
+  const uniforms = useMemo(() => THREE.UniformsUtils.clone(HolographicShader.uniforms), []);
+
+  const holoMaterial = useMemo(() => {
+    return new THREE.ShaderMaterial({
+      uniforms,
+      vertexShader: HolographicShader.vertexShader,
+      fragmentShader: HolographicShader.fragmentShader,
+      transparent: true,
+      wireframe: true,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+    });
+  }, [uniforms]);
+
+  useFrame(({ clock }) => {
+    uniforms.uTime.value = clock.getElapsedTime();
+    uniforms.uSevereCount.value = Math.min(severeMarkers.length, MAX_MARKERS);
+    severeMarkers.forEach((m, i) => {
+      if (i < MAX_MARKERS) uniforms.uSeverePositions.value[i].copy(new THREE.Vector3(...m.position));
+    });
+    uniforms.uMildCount.value = Math.min(mildMarkers.length, MAX_MARKERS);
+    mildMarkers.forEach((m, i) => {
+      if (i < MAX_MARKERS) uniforms.uMildPositions.value[i].copy(new THREE.Vector3(...m.position));
+    });
+  });
 
   useEffect(() => {
     cloned.traverse((node) => {
       if (!node.isMesh) return;
       node.material = holoMaterial;
-      node.castShadow = false;
-      node.receiveShadow = false;
-      node.frustumCulled = true;
     });
   }, [cloned, holoMaterial]);
 
@@ -74,26 +142,15 @@ export default function HolographicModel({
     return () => holoMaterial.dispose();
   }, [holoMaterial]);
 
-  // Click outside to close active dialog
   useEffect(() => {
     if (!activeMarkerId) return;
-
     const handleGlobalClick = (e) => {
-      // If the click is on the canvas (background) or not inside a marker/dialog, close it.
-      // Html components are outside the canvas in the DOM, so we check if the click
-      // target is within our custom UI.
       const isUiClick = e.target.closest('.fatigue-marker-btn') || e.target.closest('.fatigue-dialog');
-      if (!isUiClick) {
-        setActiveMarkerId(null);
-      }
+      if (!isUiClick) setActiveMarkerId(null);
     };
-
     window.addEventListener('pointerdown', handleGlobalClick);
     return () => window.removeEventListener('pointerdown', handleGlobalClick);
   }, [activeMarkerId]);
-
-  const severeMarkers = useMemo(() => resolveFatigueMarkers(severeFatigue), [severeFatigue]);
-  const mildMarkers = useMemo(() => resolveFatigueMarkers(mildFatigue), [mildFatigue]);
 
   return (
     <group position={position} rotation={rotation} scale={scale}>
@@ -132,64 +189,28 @@ export default function HolographicModel({
   );
 }
 
-useGLTF.preload('/models/humanoid.glb');
-
-/**
- * A single "danger zone" glow: an interior point light + a 2D UI marker.
- * The 2D marker is interactable and opens a detail dialog.
- */
 function FatigueMarker({ marker, severity, athleteId, isOpen, onToggle, onClose }) {
-  const lightRef = useRef(null);
   const [feedback, setFeedback] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  const isSevere = severity === 'severe';
-  const lightColor = isSevere ? '#ff3b30' : '#ff9500';
-
-  const phase = useMemo(
-    () => (marker.position[0] + marker.position[1] * 1.7 + marker.position[2] * 2.3) * 4,
-    [marker.position]
-  );
-
-  useFrame(({ clock }) => {
-    const t = clock.getElapsedTime();
-    const pulse = 0.7 + Math.sin(t * 2.4 + phase) * 0.3;
-    if (lightRef.current) lightRef.current.intensity = (isSevere ? 1.8 : 1.4) * pulse;
-  });
-
-  // Reset state when the dialog is closed so it's fresh when reopened
   useEffect(() => {
-    if (!isOpen) {
-      setIsSuccess(false);
-      setIsSubmitting(false);
-    }
+    if (!isOpen) { setIsSuccess(false); setIsSubmitting(false); }
   }, [isOpen]);
 
   const handleOverride = async () => {
     if (isSubmitting || isSuccess) return;
     setIsSubmitting(true);
-
-    // Use actual feedback if provided, else fallback to critical default
     const finalMessage = feedback.trim()
       ? `COACH [${marker.label}]: ${feedback.trim()}`
       : `CRITICAL [${marker.label}]: Training paused by Coach. Mandatory rest day initiated.`;
 
     try {
-      const { error } = await supabase
-        .from('interventions')
-        .insert({
-          athlete_id: athleteId,
-          message: finalMessage,
-        });
+      const { error } = await supabase.from('interventions').insert({ athlete_id: athleteId, message: finalMessage });
       if (error) throw error;
       setIsSuccess(true);
-      setFeedback(''); // Clear text on success
-
-      // Reset the button state after 2.5s so they can send another if needed
-      setTimeout(() => {
-        setIsSuccess(false);
-      }, 2500);
+      setFeedback('');
+      setTimeout(() => setIsSuccess(false), 2500);
     } catch (err) {
       console.error('[FatigueMarker] Failed to send override:', err);
     } finally {
@@ -199,32 +220,19 @@ function FatigueMarker({ marker, severity, athleteId, isOpen, onToggle, onClose 
 
   return (
     <group position={marker.position}>
-      <pointLight
-        ref={lightRef}
-        color={lightColor}
-        intensity={1.6}
-        distance={0.6}
-        decay={2}
-      />
-
       <Html center distanceFactor={1.5}>
         <div style={{ position: 'relative' }}>
           <button
             type="button"
             className="fatigue-marker-btn"
-            style={{ '--marker-color': lightColor }}
+            style={{ '--marker-color': severity === 'severe' ? '#ff3b30' : '#ff9500' }}
             onClick={onToggle}
           />
-
           {isOpen && (
             <div className="fatigue-dialog" onClick={(e) => e.stopPropagation()}>
               <div className="fatigue-dialog__header">
                 <span className="fatigue-dialog__title">{marker.label}</span>
-                <button
-                  type="button"
-                  className="fatigue-dialog__close"
-                  onClick={onClose}
-                >
+                <button type="button" className="fatigue-dialog__close" onClick={onClose}>
                   <SymbolIcon name="cross" size={12} style={{ transform: 'rotate(45deg)' }} />
                 </button>
               </div>
@@ -242,16 +250,7 @@ function FatigueMarker({ marker, severity, athleteId, isOpen, onToggle, onClose 
                 onClick={handleOverride}
                 disabled={isSubmitting || isSuccess}
               >
-                {isSubmitting ? (
-                  <>
-                    <span className="spinner" />
-                    Sending Override...
-                  </>
-                ) : isSuccess ? (
-                  'Override Sent'
-                ) : (
-                  'Override Training'
-                )}
+                {isSubmitting ? <><span className="spinner" /> Sending...</> : isSuccess ? 'Override Sent' : 'Override Training'}
               </button>
             </div>
           )}
@@ -260,3 +259,5 @@ function FatigueMarker({ marker, severity, athleteId, isOpen, onToggle, onClose 
     </group>
   );
 }
+
+useGLTF.preload('/models/humanoid.glb');
