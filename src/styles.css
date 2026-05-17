@@ -6,7 +6,7 @@
 :root {
   --bg: #f2f2f7;
   --bg-elevated: #ffffff;
-  --bg-translucent: rgba(255, 255, 255, 0.72);
+  --bg-translucent: rgba(255, 255, 255, 0.7);
   --bg-muted: rgba(120, 120, 128, 0.08);
   --bg-hover: rgba(120, 120, 128, 0.12);
   --bg-pressed: rgba(120, 120, 128, 0.18);
@@ -37,6 +37,10 @@
   --motion-spring: cubic-bezier(0.2, 0.8, 0.2, 1);
   --motion-standard: cubic-bezier(0.28, 0.11, 0.32, 1);
 
+  --glass-blur: 25px;
+  --glass-saturate: 190%;
+  --glass-border: rgba(255, 255, 255, 0.4);
+
   --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
     "Helvetica Neue", system-ui, sans-serif;
 }
@@ -44,7 +48,7 @@
 html[data-theme="dark"] {
   --bg: #000000;
   --bg-elevated: #1c1c1e;
-  --bg-translucent: rgba(28, 28, 30, 0.72);
+  --bg-translucent: rgba(28, 28, 30, 0.65);
   --bg-muted: rgba(120, 120, 128, 0.18);
   --bg-hover: rgba(120, 120, 128, 0.24);
   --bg-pressed: rgba(120, 120, 128, 0.3);
@@ -63,6 +67,8 @@ html[data-theme="dark"] {
   --orange: #ff9f0a;
   --red: #ff453a;
   --gray: #98989d;
+
+  --glass-border: rgba(255, 255, 255, 0.08);
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.28);
   --shadow-md: 0 1px 2px rgba(0, 0, 0, 0.32), 0 10px 30px rgba(0, 0, 0, 0.24);
@@ -84,6 +90,15 @@ body,
   background: var(--bg);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-image:
+    radial-gradient(at 0% 0%, color-mix(in srgb, var(--accent) 5%, transparent) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, color-mix(in srgb, var(--green) 5%, transparent) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, color-mix(in srgb, var(--orange) 5%, transparent) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, color-mix(in srgb, var(--red) 5%, transparent) 0px, transparent 50%);
+  background-attachment: fixed;
 }
 
 h1,
@@ -132,9 +147,12 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 button.primary {
   background: var(--accent);
   color: #fff;
-  box-shadow: 0 1px 2px rgba(0, 122, 255, 0.3);
+  box-shadow: 0 4px 14px 0 color-mix(in srgb, var(--accent) 30%, transparent);
 }
-button.primary:hover { background: var(--accent-strong); }
+button.primary:hover {
+  background: var(--accent-strong);
+  box-shadow: 0 6px 20px 0 color-mix(in srgb, var(--accent) 40%, transparent);
+}
 
 button.danger {
   background: transparent;
@@ -160,7 +178,9 @@ textarea {
   padding: 10px 12px;
   border: 1px solid var(--separator);
   border-radius: var(--radius-md);
-  background: var(--bg-elevated);
+  background: var(--bg-translucent);
+  -webkit-backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
+  backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
   width: 100%;
   color: var(--text-primary);
   transition:
@@ -236,11 +256,13 @@ main.app-main.app-main--wide {
 }
 
 .card {
-  background: var(--bg-elevated);
+  background: var(--bg-translucent);
   border-radius: var(--radius-lg);
   padding: 20px;
-  border: 1px solid var(--separator);
+  border: 1px solid var(--glass-border);
   box-shadow: var(--shadow-md);
+  -webkit-backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
+  backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
   transition:
     transform 0.26s var(--motion-spring),
     box-shadow 0.26s var(--motion-standard),
@@ -339,8 +361,8 @@ main.app-main.app-main--wide {
 .app-header {
   background: var(--bg-translucent);
   border-bottom: 1px solid var(--separator);
-  -webkit-backdrop-filter: saturate(180%) blur(24px);
-  backdrop-filter: saturate(180%) blur(24px);
+  -webkit-backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
+  backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
 }
 
 .app-header__inner {
@@ -393,10 +415,12 @@ main.app-main.app-main--wide {
   min-height: 34px;
   padding: 4px 10px 4px 4px;
   border-radius: var(--radius-pill);
-  background: var(--bg-muted);
+  background: var(--bg-translucent);
+  -webkit-backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
+  backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
   color: var(--text-secondary);
-  box-shadow: none;
-  border-color: var(--separator);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--glass-border);
 }
 
 .theme-toggle:hover { background: var(--bg-hover); }
@@ -437,10 +461,10 @@ main.app-main.app-main--wide {
   padding: 4px;
   border-radius: var(--radius-pill);
   background: var(--bg-translucent);
-  border: 1px solid var(--separator);
-  box-shadow: var(--shadow-md);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
-  backdrop-filter: saturate(180%) blur(20px);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-lg);
+  -webkit-backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
+  backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
 }
 
 .pill-nav__item {
@@ -485,10 +509,12 @@ main.app-main.app-main--wide {
   border-radius: var(--radius-pill);
   font-size: 12px;
   font-weight: 600;
-  background: color-mix(in srgb, var(--badge-color) 14%, transparent);
+  background: color-mix(in srgb, var(--badge-color) 10%, var(--bg-translucent));
   color: var(--badge-color);
-  border: 1px solid color-mix(in srgb, var(--badge-color) 20%, transparent);
+  border: 1px solid color-mix(in srgb, var(--badge-color) 20%, var(--glass-border));
   white-space: nowrap;
+  -webkit-backdrop-filter: saturate(var(--glass-saturate)) blur(8px);
+  backdrop-filter: saturate(var(--glass-saturate)) blur(8px);
   transition: transform 0.24s var(--motion-spring), background 0.24s var(--motion-standard);
 }
 
@@ -512,11 +538,13 @@ main.app-main.app-main--wide {
 }
 
 .stat-card {
-  background: var(--bg-elevated);
+  background: var(--bg-translucent);
   border-radius: var(--radius-lg);
   padding: 18px 20px;
-  border: 1px solid color-mix(in srgb, var(--accent-color) 18%, var(--separator));
+  border: 1px solid var(--glass-border);
   box-shadow: var(--shadow-md);
+  -webkit-backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
+  backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -612,15 +640,17 @@ main.app-main.app-main--wide {
 }
 
 .member-card {
-  background: var(--bg-elevated);
+  background: var(--bg-translucent);
   border-radius: var(--radius-lg);
   padding: 18px;
   box-shadow: var(--shadow-md);
+  -webkit-backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
+  backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
   display: flex;
   gap: 14px;
   align-items: flex-start;
   cursor: pointer;
-  border: 1px solid transparent;
+  border: 1px solid var(--glass-border);
   text-align: left;
   width: 100%;
   font-family: inherit;
@@ -777,10 +807,12 @@ main.app-main.app-main--wide {
 }
 
 .kv-card {
-  background: var(--bg-muted);
+  background: var(--bg-translucent);
   border-radius: var(--radius-md);
   padding: 12px;
-  border: 1px solid var(--separator);
+  border: 1px solid var(--glass-border);
+  -webkit-backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
+  backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
   transition:
     transform 0.24s var(--motion-spring),
     border-color 0.24s var(--motion-standard),
@@ -806,7 +838,9 @@ main.app-main.app-main--wide {
 }
 
 .advice-card {
-  background: var(--accent-soft);
+  background: var(--bg-translucent);
+  -webkit-backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
+  backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
   border-color: color-mix(in srgb, var(--accent) 24%, var(--separator));
 }
 
@@ -940,12 +974,14 @@ main.app-main.app-main--wide {
 }
 
 .chart-card {
-  background: var(--bg-elevated);
+  background: var(--bg-translucent);
   min-height: 410px;
   padding: 20px;
   border-radius: var(--radius-lg);
-  border: 1px solid var(--separator);
+  border: 1px solid var(--glass-border);
   box-shadow: var(--shadow-md);
+  -webkit-backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
+  backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
   transition:
     transform 0.26s var(--motion-spring),
     box-shadow 0.26s var(--motion-standard),
