@@ -13,6 +13,23 @@ export default function AuthPage({ theme, onThemeToggle }) {
 
   const isLogin = mode === 'login';
 
+  const VISITOR_EMAIL = 'coach@test.com';
+  const VISITOR_PASSWORD = '111111';
+
+  async function handleVisitorLogin() {
+    setError(null);
+    setSubmitting(true);
+    setEmail(VISITOR_EMAIL);
+    setPassword(VISITOR_PASSWORD);
+    try {
+      await signIn(VISITOR_EMAIL, VISITOR_PASSWORD);
+    } catch (err) {
+      setError(err.message ?? 'Something went wrong.');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   async function handleSubmit(event) {
     event.preventDefault();
     setError(null);
@@ -48,6 +65,24 @@ export default function AuthPage({ theme, onThemeToggle }) {
       </section>
 
       <form className="card" onSubmit={handleSubmit}>
+        <div style={{ marginBottom: 12 }}>
+          <button
+            type="button"
+            className="ghost"
+            style={{
+              width: '100%',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              padding: '10px 14px',
+            }}
+            onClick={handleVisitorLogin}
+            disabled={submitting}
+          >
+            Log in with visitor&apos;s account
+          </button>
+        </div>
+
         <div style={{ marginBottom: 12 }}>
           <label htmlFor="email">Email</label>
           <input
