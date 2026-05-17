@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import {
   classifyAthlete,
@@ -12,6 +12,8 @@ import StatusBadge from '../StatusBadge.jsx';
 import LogTimeline from './LogTimeline.jsx';
 import FatigueMapCanvas from '../holomap/FatigueMapCanvas.jsx';
 import { inferFatigueZonesFromAthlete } from '../holomap/fatigueZones.js';
+import { useAuth } from '../../context/AuthContext.jsx';
+import { supabase } from '../../lib/supabaseClient.js';
 
 /**
  * The athlete detail view needs more horizontal room than the rest of the
@@ -38,6 +40,10 @@ function useWideMainShell() {
  */
 export default function AthleteDetail({ athlete, allLogs, onBack }) {
   useWideMainShell();
+  const { user } = useAuth();
+
+  const [isKudosCooldown, setIsKudosCooldown] = useState(false);
+  const [isKudosAnimating, setIsKudosAnimating] = useState(false);
 
   const status = classifyAthlete(athlete);
   const logs = allLogs.filter((l) => l.athlete_id === athlete.athleteId);
@@ -52,6 +58,27 @@ export default function AthleteDetail({ athlete, allLogs, onBack }) {
     const raw = latest?.mild_muscle_fatigue_mild;
     return Array.isArray(raw) ? raw : [];
   }, [latest]);
+
+  const handleSendKudos = async () => {
+    if (isKudosCooldown) return;
+
+    setIsKudosAnimating(true);
+    setIsKudosCooldown(true);
+
+    try {
+      const { error } = await supabase.from('kudos').insert({
+        athlete_id: athlete.athleteId,
+        coach_id: user?.id,
+      });
+      if (error) throw error;
+    } catch (err) {
+      console.error('[AthleteDetail] Failed to send kudos:', err);
+    }
+
+    // Stop animation quickly, but keep cooldown for 3s
+    setTimeout(() => setIsKudosAnimating(false), 500);
+    setTimeout(() => setIsKudosCooldown(false), 3000);
+  };
 
   return (
     <div>
@@ -99,6 +126,15 @@ export default function AthleteDetail({ athlete, allLogs, onBack }) {
                 <div className="kv-card__label">Logs on file</div>
                 <div className="kv-card__value">{logs.length}</div>
               </div>
+              <button
+                type="button"
+                className={`kudos-button ${isKudosAnimating ? 'animating' : ''}`}
+                onClick={handleSendKudos}
+                disabled={isKudosCooldown}
+                title="Send Kudos"
+              >
+                🎉
+              </button>
             </div>
 
             <div className="kv-card advice-card">

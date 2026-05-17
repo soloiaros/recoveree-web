@@ -797,12 +797,13 @@ main.app-main.app-main--wide {
 
 .detail-stats {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, 1fr) auto;
   gap: 12px;
   margin: 16px 0;
+  align-items: stretch;
 }
 
-@media (max-width: 480px) {
+@media (max-width: 720px) {
   .detail-stats { grid-template-columns: 1fr 1fr; }
 }
 
@@ -1321,4 +1322,47 @@ main.app-main.app-main--wide {
   background: var(--green) !important;
   border-color: var(--green) !important;
   box-shadow: 0 4px 14px 0 color-mix(in srgb, var(--green) 30%, transparent) !important;
+}
+
+/* ───────── Kudos Feature ───────── */
+
+.kudos-button {
+  font-size: 24px;
+  aspect-ratio: 1 / 1;
+  padding: 0;
+  border-radius: 16px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--separator);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.22s var(--motion-spring);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.kudos-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.kudos-button:hover:not(:disabled) {
+  background: var(--bg-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.kudos-button:active:not(:disabled) {
+  transform: scale(0.92);
+}
+
+.kudos-button.animating {
+  animation: pop-bounce 0.45s var(--motion-spring);
+}
+
+@keyframes pop-bounce {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.4); }
+  50% { transform: scale(0.9); }
+  70% { transform: scale(1.1); }
+  100% { transform: scale(1); }
 }
