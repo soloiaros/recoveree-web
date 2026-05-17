@@ -12,7 +12,8 @@ import { resolveFatigueMarkers } from './fatigueZones.js';
  * coordinates land on the right body parts.
  */
 export default function ProceduralHumanoid({
-  fatigueZones = [],
+  severeFatigue = [],
+  mildFatigue = [],
   scale = 1,
   position = [0, 0, 0],
   rotation = [0, 0, 0],
@@ -33,7 +34,8 @@ export default function ProceduralHumanoid({
     []
   );
 
-  const markers = useMemo(() => resolveFatigueMarkers(fatigueZones), [fatigueZones]);
+  const severeMarkers = useMemo(() => resolveFatigueMarkers(severeFatigue), [severeFatigue]);
+  const mildMarkers = useMemo(() => resolveFatigueMarkers(mildFatigue), [mildFatigue]);
 
   return (
     <group position={position} rotation={rotation} scale={scale}>
@@ -76,22 +78,30 @@ export default function ProceduralHumanoid({
         </group>
       ))}
 
-      {markers.map((m) => (
-        <ProcFatigueMarker key={m.id} position={m.position} />
+      {severeMarkers.map((m) => (
+        <ProcFatigueMarker key={`severe-${m.id}`} position={m.position} severity="severe" />
+      ))}
+      {mildMarkers.map((m) => (
+        <ProcFatigueMarker key={`mild-${m.id}`} position={m.position} severity="mild" />
       ))}
     </group>
   );
 }
 
-function ProcFatigueMarker({ position }) {
+function ProcFatigueMarker({ position, severity = 'severe' }) {
+  const isSevere = severity === 'severe';
+  const colors = isSevere
+    ? { light: '#ff3b30', sphere: '#ff5c53', emissive: '#ff3b30' }
+    : { light: '#ff9500', sphere: '#ffb74d', emissive: '#ff9500' };
+
   return (
     <group position={position}>
-      <pointLight color="#ff5722" intensity={1.6} distance={0.6} decay={2} />
+      <pointLight color={colors.light} intensity={1.6} distance={0.6} decay={2} />
       <mesh>
         <sphereGeometry args={[0.04, 24, 24]} />
         <meshStandardMaterial
-          color="#ff7043"
-          emissive="#ff3d00"
+          color={colors.sphere}
+          emissive={colors.emissive}
           emissiveIntensity={3.2}
           transparent
           opacity={0.85}

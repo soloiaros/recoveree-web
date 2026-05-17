@@ -43,10 +43,12 @@ export default function AthleteDetail({ athlete, allLogs, onBack }) {
   const logs = allLogs.filter((l) => l.athlete_id === athlete.athleteId);
   const latest = athlete.latestLog;
 
-  const fatigueZones = useMemo(
-    () => inferFatigueZonesFromAthlete(athlete),
-    [athlete]
-  );
+  const severeFatigue = useMemo(() => {
+    if (latest?.muscle_fatigue?.length > 0) return latest.muscle_fatigue;
+    return inferFatigueZonesFromAthlete(athlete);
+  }, [athlete, latest]);
+
+  const mildFatigue = latest?.mild_muscle_fatigue ?? [];
 
   return (
     <div>
@@ -120,7 +122,7 @@ export default function AthleteDetail({ athlete, allLogs, onBack }) {
         <aside className="athlete-detail-aside">
           <div className="holomap-float" aria-label="Holographic fatigue map">
             <div className="holomap-float__stage">
-              <FatigueMapCanvas fatigueZones={fatigueZones} />
+              <FatigueMapCanvas severeFatigue={severeFatigue} mildFatigue={mildFatigue} />
             </div>
           </div>
         </aside>

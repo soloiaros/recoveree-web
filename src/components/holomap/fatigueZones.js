@@ -32,24 +32,47 @@ const SINGLE_ZONES = {
   right_quad: [0.1, 0.7, 0.06],
   left_hamstring: [-0.1, 0.7, -0.06],
   right_hamstring: [0.1, 0.7, -0.06],
+  left_glute: [-0.15, 0.85, -0.1],
+  right_glute: [0.15, 0.85, -0.1],
+
   left_knee: [-0.1, 0.5, 0.04],
   right_knee: [0.1, 0.5, 0.04],
   left_calf: [-0.1, 0.3, -0.05],
   right_calf: [0.1, 0.3, -0.05],
+  left_soleus: [-0.1, 0.2, -0.05],
+  right_soleus: [0.1, 0.2, -0.05],
   left_ankle: [-0.1, 0.08, 0],
   right_ankle: [0.1, 0.08, 0],
+  left_shin: [-0.1, 0.3, 0.05],
+  right_shin: [0.1, 0.3, 0.05],
+
+  left_groin: [-0.05, 0.85, 0.05],
+  right_groin: [0.05, 0.85, 0.05],
+  left_it_band: [-0.2, 0.7, 0],
+  right_it_band: [0.2, 0.7, 0],
+
+  left_rotator_cuff: [-0.2, 1.45, -0.05],
+  right_rotator_cuff: [0.2, 1.45, -0.05],
+  left_serratus: [-0.2, 1.15, 0.08],
+  right_serratus: [0.2, 1.15, 0.08],
+
+  left_plantar: [-0.1, 0.02, 0.05],
+  right_plantar: [0.1, 0.02, 0.05],
 };
 
 const SYMMETRIC_ALIASES = {
+  // Original plural aliases
   shoulders: ['left_shoulder', 'right_shoulder'],
   biceps: ['left_bicep', 'right_bicep'],
   arms: ['left_bicep', 'right_bicep', 'left_forearm', 'right_forearm'],
   forearms: ['left_forearm', 'right_forearm'],
   quads: ['left_quad', 'right_quad'],
   hamstrings: ['left_hamstring', 'right_hamstring'],
+  glutes: ['left_glute', 'right_glute'],
   knees: ['left_knee', 'right_knee'],
   calves: ['left_calf', 'right_calf'],
   ankles: ['left_ankle', 'right_ankle'],
+  shins: ['left_shin', 'right_shin'],
   legs: [
     'left_quad',
     'right_quad',
@@ -58,6 +81,22 @@ const SYMMETRIC_ALIASES = {
     'left_calf',
     'right_calf',
   ],
+
+  // New keys matching the iOS/DB strings exactly (camelCase)
+  hamstring: ['left_hamstring', 'right_hamstring'],
+  lshoulder: ['left_shoulder'],
+  rshoulder: ['right_shoulder'],
+  larm: ['left_bicep', 'left_forearm'],
+  rarm: ['right_bicep', 'right_forearm'],
+  lowerback: ['lower_back'],
+  back: ['lower_back', 'upper_back'],
+  groin: ['left_groin', 'right_groin'],
+  itband: ['left_it_band', 'right_it_band'],
+  rotatorcuff: ['left_rotator_cuff', 'right_rotator_cuff'],
+  lowerleg: ['left_soleus', 'right_soleus'],
+  thoracic: ['upper_back'],
+  serratus: ['left_serratus', 'right_serratus'],
+  plantarfascia: ['left_plantar', 'right_plantar'],
 };
 
 /**

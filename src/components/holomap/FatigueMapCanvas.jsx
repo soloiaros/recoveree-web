@@ -22,7 +22,8 @@ import ProceduralHumanoid from './ProceduralHumanoid.jsx';
  *     fails to load (lets the dashboard ship before the art asset does)
  */
 export default function FatigueMapCanvas({
-  fatigueZones = [],
+  severeFatigue = [],
+  mildFatigue = [],
   modelPath = '/models/humanoid.glb',
 }) {
   return (
@@ -48,7 +49,11 @@ export default function FatigueMapCanvas({
         <Environment preset="city" />
       </Suspense>
 
-      <ModelWithFallback fatigueZones={fatigueZones} modelPath={modelPath} />
+      <ModelWithFallback
+        severeFatigue={severeFatigue}
+        mildFatigue={mildFatigue}
+        modelPath={modelPath}
+      />
 
       <OrbitControls
         makeDefault
@@ -67,20 +72,34 @@ export default function FatigueMapCanvas({
  * Try to load the GLB; on Suspense or error, render the procedural humanoid
  * so the panel is never blank.
  */
-function ModelWithFallback({ fatigueZones, modelPath }) {
+function ModelWithFallback({ severeFatigue, mildFatigue, modelPath }) {
   return (
-    <GLBErrorBoundary fallback={<ProceduralHumanoid fatigueZones={fatigueZones} />}>
+    <GLBErrorBoundary
+      fallback={
+        <ProceduralHumanoid
+          severeFatigue={severeFatigue}
+          mildFatigue={mildFatigue}
+        />
+      }
+    >
       <Suspense
         fallback={
           <>
-            <ProceduralHumanoid fatigueZones={fatigueZones} />
+            <ProceduralHumanoid
+              severeFatigue={severeFatigue}
+              mildFatigue={mildFatigue}
+            />
             <Html center position={[0, 1.85, 0]} style={{ pointerEvents: 'none' }}>
               <div style={loadingTagStyle}>Loading hologram…</div>
             </Html>
           </>
         }
       >
-        <HolographicModel modelPath={modelPath} fatigueZones={fatigueZones} />
+        <HolographicModel
+          modelPath={modelPath}
+          severeFatigue={severeFatigue}
+          mildFatigue={mildFatigue}
+        />
       </Suspense>
     </GLBErrorBoundary>
   );

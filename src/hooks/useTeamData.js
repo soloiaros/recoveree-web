@@ -46,7 +46,7 @@ export function useTeamData(coachId) {
           .in('id', athleteIds),
         supabase
           .from('recovery_logs')
-          .select('id, athlete_id, sleep_hours, recovery_score, ai_advice, created_at')
+          .select('id, athlete_id, sleep_hours, recovery_score, ai_advice, muscle_fatigue, mild_muscle_fatigue, created_at')
           .in('athlete_id', athleteIds)
           .order('created_at', { ascending: false }),
       ]);

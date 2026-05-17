@@ -28,7 +28,8 @@ import { resolveFatigueMarkers } from './fatigueZones.js';
  */
 export default function HolographicModel({
   modelPath = '/models/humanoid.glb',
-  fatigueZones = [],
+  severeFatigue = [],
+  mildFatigue = [],
   scale = 1,
   position = [0, 0, 0],
   rotation = [0, 0, 0],
@@ -94,15 +95,19 @@ export default function HolographicModel({
     return () => holoMaterial.dispose();
   }, [holoMaterial]);
 
-  const markers = useMemo(() => resolveFatigueMarkers(fatigueZones), [fatigueZones]);
+  const severeMarkers = useMemo(() => resolveFatigueMarkers(severeFatigue), [severeFatigue]);
+  const mildMarkers = useMemo(() => resolveFatigueMarkers(mildFatigue), [mildFatigue]);
 
   return (
     <group position={position} rotation={rotation} scale={scale}>
       <group scale={modelTransform.scale}>
         <primitive object={cloned} position={modelTransform.offset} />
       </group>
-      {markers.map((m) => (
-        <FatigueMarker key={m.id} position={m.position} />
+      {severeMarkers.map((m) => (
+        <FatigueMarker key={`severe-${m.id}`} position={m.position} severity="severe" />
+      ))}
+      {mildMarkers.map((m) => (
+        <FatigueMarker key={`mild-${m.id}`} position={m.position} severity="mild" />
       ))}
     </group>
   );
@@ -117,9 +122,14 @@ useGLTF.preload('/models/humanoid.glb');
  * light. The sphere pulses gently so multiple markers stay readable instead
  * of melting into a single orange smear.
  */
-function FatigueMarker({ position }) {
+function FatigueMarker({ position, severity = 'severe' }) {
   const lightRef = useRef(null);
   const sphereRef = useRef(null);
+
+  const isSevere = severity === 'severe';
+  const colors = isSevere
+    ? { light: '#ff3b30', sphere: '#ff5c53', emissive: '#ff3b30' }
+    : { light: '#ff9500', sphere: '#ffb74d', emissive: '#ff9500' };
 
   // Each marker gets a slight phase offset so a row of markers pulses out of
   // sync instead of strobing in unison. Derived from position so it's stable
@@ -132,7 +142,7 @@ function FatigueMarker({ position }) {
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
     const pulse = 0.7 + Math.sin(t * 2.4 + phase) * 0.3;
-    if (lightRef.current) lightRef.current.intensity = 1.6 * pulse;
+    if (lightRef.current) lightRef.current.intensity = (isSevere ? 1.8 : 1.4) * pulse;
     if (sphereRef.current) {
       const s = 0.85 + pulse * 0.25;
       sphereRef.current.scale.set(s, s, s);
@@ -143,7 +153,7 @@ function FatigueMarker({ position }) {
     <group position={position}>
       <pointLight
         ref={lightRef}
-        color="#ff5722"
+        color={colors.light}
         intensity={1.6}
         distance={0.6}
         decay={2}
@@ -151,8 +161,8 @@ function FatigueMarker({ position }) {
       <mesh ref={sphereRef}>
         <sphereGeometry args={[0.04, 24, 24]} />
         <meshStandardMaterial
-          color="#ff7043"
-          emissive="#ff3d00"
+          color={colors.sphere}
+          emissive={colors.emissive}
           emissiveIntensity={3.2}
           transparent
           opacity={0.85}
