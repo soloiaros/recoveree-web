@@ -48,7 +48,10 @@ export default function AthleteDetail({ athlete, allLogs, onBack }) {
     return inferFatigueZonesFromAthlete(athlete);
   }, [athlete, latest]);
 
-  const mildFatigue = latest?.mild_muscle_fatigue ?? [];
+  const mildFatigue = useMemo(() => {
+    const raw = latest?.mild_muscle_fatigue_mild;
+    return Array.isArray(raw) ? raw : [];
+  }, [latest]);
 
   return (
     <div>

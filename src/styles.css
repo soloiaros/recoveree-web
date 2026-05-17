@@ -1224,3 +1224,95 @@ main.app-main.app-main--wide {
   height: 100% !important;
   outline: none;
 }
+
+/* ───────── 2D Fatigue Markers & Dialogs ───────── */
+
+.fatigue-marker-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 4px solid var(--marker-color);
+  padding: 0;
+  cursor: pointer;
+  background: #fff;
+  box-shadow: 0 0 12px var(--marker-color), inset 0 0 4px rgba(0, 0, 0, 0.1);
+  transition: transform 0.22s var(--motion-spring), box-shadow 0.22s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fatigue-marker-btn:hover {
+  transform: scale(1.15);
+  box-shadow: 0 0 18px var(--marker-color), inset 0 0 4px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+}
+
+.fatigue-dialog {
+  width: 480px;
+  background: var(--bg-translucent);
+  -webkit-backdrop-filter: saturate(180%) blur(30px);
+  backdrop-filter: saturate(180%) blur(30px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  animation: panel-enter 0.32s var(--motion-standard);
+  z-index: 1000;
+}
+
+.fatigue-dialog__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.fatigue-dialog__title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+.fatigue-dialog__close {
+  background: transparent;
+  border: none;
+  padding: 6px;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  border-radius: 50%;
+  display: flex;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.fatigue-dialog__close:hover {
+  background: var(--bg-muted);
+  color: var(--text-primary);
+}
+
+.fatigue-dialog__textarea {
+  font-size: 18px;
+  min-height: 200px;
+  line-height: 1.6;
+  resize: none;
+  background: var(--bg-elevated);
+  border: 1px solid var(--separator);
+  color: var(--text-primary);
+  padding: 16px;
+  border-radius: var(--radius-md);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.fatigue-dialog__textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+  outline: none;
+}

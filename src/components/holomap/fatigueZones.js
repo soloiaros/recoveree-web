@@ -104,11 +104,13 @@ const SYMMETRIC_ALIASES = {
  * `{ id, position: [x,y,z] }` marker descriptors. Unknown keys are silently
  * dropped (and logged in dev) so a stray label can't crash the scene.
  */
-export function resolveFatigueMarkers(zones = []) {
+export function resolveFatigueMarkers(zones) {
+  // Defensive: ensure we always have an iterable array, even if null/undefined is passed
+  const safeZones = Array.isArray(zones) ? zones : [];
   const seen = new Set();
   const out = [];
 
-  for (const raw of zones) {
+  for (const raw of safeZones) {
     if (typeof raw !== 'string') continue;
     const key = raw.trim().toLowerCase();
     if (!key) continue;
@@ -124,7 +126,14 @@ export function resolveFatigueMarkers(zones = []) {
         continue;
       }
       seen.add(id);
-      out.push({ id, position });
+
+      // Prettify the ID into a label (e.g. "left_shoulder" -> "Left Shoulder")
+      const label = id
+        .split('_')
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+
+      out.push({ id, position, label });
     }
   }
 

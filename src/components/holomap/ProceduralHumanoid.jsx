@@ -1,15 +1,15 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import * as THREE from 'three';
+import { Html } from '@react-three/drei';
+import { useThree } from '@react-three/fiber';
 
 import { resolveFatigueMarkers } from './fatigueZones.js';
+import SymbolIcon from '../SymbolIcon.jsx';
 
 /**
  * Stand-in humanoid built from primitives. Used as the Suspense / error
  * fallback for <HolographicModel> when the `.glb` is missing — keeps the
  * dashboard visually complete during development and CI builds.
- *
- * Proportions roughly match a 1.8m mesh so the same `fatigueZones.js`
- * coordinates land on the right body parts.
  */
 export default function ProceduralHumanoid({
   severeFatigue = [],
@@ -18,6 +18,9 @@ export default function ProceduralHumanoid({
   position = [0, 0, 0],
   rotation = [0, 0, 0],
 }) {
+  const { gl } = useThree();
+  const [activeMarkerId, setActiveMarkerId] = useState(null);
+
   const material = useMemo(
     () =>
       new THREE.MeshStandardMaterial({
@@ -33,6 +36,21 @@ export default function ProceduralHumanoid({
       }),
     []
   );
+
+  // Click outside to close active dialog
+  useEffect(() => {
+    if (!activeMarkerId) return;
+
+    const handleGlobalClick = (e) => {
+      const isUiClick = e.target.closest('.fatigue-marker-btn') || e.target.closest('.fatigue-dialog');
+      if (!isUiClick) {
+        setActiveMarkerId(null);
+      }
+    };
+
+    window.addEventListener('pointerdown', handleGlobalClick);
+    return () => window.removeEventListener('pointerdown', handleGlobalClick);
+  }, [activeMarkerId]);
 
   const severeMarkers = useMemo(() => resolveFatigueMarkers(severeFatigue), [severeFatigue]);
   const mildMarkers = useMemo(() => resolveFatigueMarkers(mildFatigue), [mildFatigue]);
@@ -79,35 +97,73 @@ export default function ProceduralHumanoid({
       ))}
 
       {severeMarkers.map((m) => (
-        <ProcFatigueMarker key={`severe-${m.id}`} position={m.position} severity="severe" />
+        <ProcFatigueMarker
+          key={`severe-${m.id}`}
+          marker={m}
+          severity="severe"
+          isOpen={activeMarkerId === `severe-${m.id}`}
+          onToggle={(e) => {
+            e.stopPropagation();
+            setActiveMarkerId(prev => (prev === `severe-${m.id}` ? null : `severe-${m.id}`));
+          }}
+          onClose={() => setActiveMarkerId(null)}
+        />
       ))}
       {mildMarkers.map((m) => (
-        <ProcFatigueMarker key={`mild-${m.id}`} position={m.position} severity="mild" />
+        <ProcFatigueMarker
+          key={`mild-${m.id}`}
+          marker={m}
+          severity="mild"
+          isOpen={activeMarkerId === `mild-${m.id}`}
+          onToggle={(e) => {
+            e.stopPropagation();
+            setActiveMarkerId(prev => (prev === `mild-${m.id}` ? null : `mild-${m.id}`));
+          }}
+          onClose={() => setActiveMarkerId(null)}
+        />
       ))}
     </group>
   );
 }
 
-function ProcFatigueMarker({ position, severity = 'severe' }) {
+function ProcFatigueMarker({ marker, severity, isOpen, onToggle, onClose }) {
   const isSevere = severity === 'severe';
-  const colors = isSevere
-    ? { light: '#ff3b30', sphere: '#ff5c53', emissive: '#ff3b30' }
-    : { light: '#ff9500', sphere: '#ffb74d', emissive: '#ff9500' };
+  const lightColor = isSevere ? '#ff3b30' : '#ff9500';
 
   return (
-    <group position={position}>
-      <pointLight color={colors.light} intensity={1.6} distance={0.6} decay={2} />
-      <mesh>
-        <sphereGeometry args={[0.04, 24, 24]} />
-        <meshStandardMaterial
-          color={colors.sphere}
-          emissive={colors.emissive}
-          emissiveIntensity={3.2}
-          transparent
-          opacity={0.85}
-          toneMapped={false}
-        />
-      </mesh>
+    <group position={marker.position}>
+      <pointLight color={lightColor} intensity={1.6} distance={0.6} decay={2} />
+
+      <Html center distanceFactor={1.5}>
+        <div style={{ position: 'relative' }}>
+          <button
+            type="button"
+            className="fatigue-marker-btn"
+            style={{ '--marker-color': lightColor }}
+            onClick={onToggle}
+          />
+
+          {isOpen && (
+            <div className="fatigue-dialog" onClick={(e) => e.stopPropagation()}>
+              <div className="fatigue-dialog__header">
+                <span className="fatigue-dialog__title">{marker.label}</span>
+                <button
+                  type="button"
+                  className="fatigue-dialog__close"
+                  onClick={onClose}
+                >
+                  <SymbolIcon name="cross" size={12} style={{ transform: 'rotate(45deg)' }} />
+                </button>
+              </div>
+              <textarea
+                className="fatigue-dialog__textarea"
+                placeholder={`Detailed feedback for ${marker.label.toLowerCase()}...`}
+                autoFocus
+              />
+            </div>
+          )}
+        </div>
+      </Html>
     </group>
   );
 }
